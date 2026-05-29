@@ -1,0 +1,88 @@
+[2026-05-22T18:13:13.546Z] [INFO] MCP Server initialized.
+[2026-05-22T18:13:13.551Z] [INFO] Server is running. Waiting for messages from stdin.
+[2026-05-22T18:13:13.563Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}}
+[2026-05-22T18:13:13.564Z] [INFO] Handling initialize with params: {"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}
+[2026-05-22T18:13:13.564Z] [INFO] Sent response for ID 0: {"protocolVersion":"2024-11-05","capabilities":{"resources":{"subscribe":false,"listChanged":false}},"serverInfo":{"name":"Node.js MCP Resource Server","version":"1.0.0"}}
+[2026-05-22T18:13:13.565Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","method":"notifications/initialized"}
+[2026-05-22T18:13:13.565Z] [WARN] No handler found for method: notifications/initialized
+[2026-05-22T18:13:13.565Z] [ERROR] Sent error for ID undefined: Method not found: notifications/initialized (code: -32601)
+[2026-05-22T18:13:13.565Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"progressToken":0}}}
+[2026-05-22T18:13:13.565Z] [WARN] No handler found for method: tools/list
+[2026-05-22T18:13:13.565Z] [ERROR] Sent error for ID 1: Method not found: tools/list (code: -32601)
+[2026-05-22T18:13:25.464Z] [INFO] MCP Server initialized.
+[2026-05-22T18:13:25.469Z] [INFO] Server is running. Waiting for messages from stdin.
+[2026-05-22T18:13:25.480Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}}
+[2026-05-22T18:13:25.481Z] [INFO] Handling initialize with params: {"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}
+[2026-05-22T18:13:25.481Z] [INFO] Sent response for ID 0: {"protocolVersion":"2024-11-05","capabilities":{"resources":{"subscribe":false,"listChanged":false}},"serverInfo":{"name":"Node.js MCP Resource Server","version":"1.0.0"}}
+[2026-05-22T18:13:25.482Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","method":"notifications/initialized"}
+[2026-05-22T18:13:25.482Z] [WARN] No handler found for method: notifications/initialized
+[2026-05-22T18:13:25.482Z] [ERROR] Sent error for ID undefined: Method not found: notifications/initialized (code: -32601)
+[2026-05-22T18:13:25.482Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"progressToken":0}}}
+[2026-05-22T18:13:25.482Z] [WARN] No handler found for method: tools/list
+[2026-05-22T18:13:25.482Z] [ERROR] Sent error for ID 1: Method not found: tools/list (code: -32601)
+[2026-05-22T18:22:00.685Z] [INFO] MCP Server initialized.
+[2026-05-22T18:22:00.688Z] [INFO] Server is running. Waiting for messages from stdin.
+[2026-05-22T18:22:00.697Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}}
+[2026-05-22T18:22:00.697Z] [INFO] Handling initialize with params: {"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}
+[2026-05-22T18:22:00.698Z] [INFO] Sent response for ID 0: {"protocolVersion":"2024-11-05","capabilities":{"resources":{"subscribe":false,"listChanged":false}},"serverInfo":{"name":"Node.js MCP Resource Server","version":"1.0.0"}}
+[2026-05-22T18:22:00.698Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","method":"notifications/initialized"}
+[2026-05-22T18:22:00.699Z] [WARN] No handler found for method: notifications/initialized
+[2026-05-22T18:22:00.699Z] [ERROR] Sent error for ID undefined: Method not found: notifications/initialized (code: -32601)
+[2026-05-22T18:22:00.699Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"progressToken":0}}}
+[2026-05-22T18:22:00.699Z] [WARN] No handler found for method: tools/list
+[2026-05-22T18:22:00.699Z] [ERROR] Sent error for ID 1: Method not found: tools/list (code: -32601)
+[2026-05-22T19:14:39.673Z] [INFO] MCP Server initialized.
+[2026-05-22T19:14:39.677Z] [INFO] Server is running. Waiting for messages from stdin.
+[2026-05-22T19:14:39.687Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}}
+[2026-05-22T19:14:39.687Z] [INFO] Handling initialize with params: {"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}
+[2026-05-22T19:14:39.688Z] [INFO] Sent response for ID 0: {"protocolVersion":"2024-11-05","capabilities":{"resources":{"subscribe":false,"listChanged":false}},"serverInfo":{"name":"Node.js MCP Resource Server","version":"1.0.0"}}
+[2026-05-22T19:14:39.688Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","method":"notifications/initialized"}
+[2026-05-22T19:14:39.688Z] [WARN] No handler found for method: notifications/initialized
+[2026-05-22T19:14:39.689Z] [ERROR] Sent error for ID undefined: Method not found: notifications/initialized (code: -32601)
+[2026-05-22T19:14:39.689Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"progressToken":0}}}
+[2026-05-22T19:14:39.689Z] [WARN] No handler found for method: tools/list
+[2026-05-22T19:14:39.689Z] [ERROR] Sent error for ID 1: Method not found: tools/list (code: -32601)
+[2026-05-29T13:55:18.094Z] [INFO] MCP Server initialized.
+[2026-05-29T13:55:18.097Z] [INFO] Server is running. Waiting for messages from stdin.
+[2026-05-29T13:55:18.105Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}}
+[2026-05-29T13:55:18.106Z] [INFO] Handling initialize with params: {"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}
+[2026-05-29T13:55:18.106Z] [INFO] Sent response for ID 0: {"protocolVersion":"2024-11-05","capabilities":{"resources":{"subscribe":false,"listChanged":false}},"serverInfo":{"name":"Node.js MCP Resource Server","version":"1.0.0"}}
+[2026-05-29T13:55:18.107Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","method":"notifications/initialized"}
+[2026-05-29T13:55:18.107Z] [WARN] No handler found for method: notifications/initialized
+[2026-05-29T13:55:18.107Z] [ERROR] Sent error for ID undefined: Method not found: notifications/initialized (code: -32601)
+[2026-05-29T13:55:18.107Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"progressToken":0}}}
+[2026-05-29T13:55:18.107Z] [WARN] No handler found for method: tools/list
+[2026-05-29T13:55:18.107Z] [ERROR] Sent error for ID 1: Method not found: tools/list (code: -32601)
+[2026-05-29T13:55:24.025Z] [INFO] MCP Server initialized.
+[2026-05-29T13:55:24.028Z] [INFO] Server is running. Waiting for messages from stdin.
+[2026-05-29T13:55:24.038Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}}
+[2026-05-29T13:55:24.038Z] [INFO] Handling initialize with params: {"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}
+[2026-05-29T13:55:24.039Z] [INFO] Sent response for ID 0: {"protocolVersion":"2024-11-05","capabilities":{"resources":{"subscribe":false,"listChanged":false}},"serverInfo":{"name":"Node.js MCP Resource Server","version":"1.0.0"}}
+[2026-05-29T13:55:24.040Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","method":"notifications/initialized"}
+[2026-05-29T13:55:24.040Z] [WARN] No handler found for method: notifications/initialized
+[2026-05-29T13:55:24.040Z] [ERROR] Sent error for ID undefined: Method not found: notifications/initialized (code: -32601)
+[2026-05-29T13:55:24.040Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"progressToken":0}}}
+[2026-05-29T13:55:24.040Z] [WARN] No handler found for method: tools/list
+[2026-05-29T13:55:24.040Z] [ERROR] Sent error for ID 1: Method not found: tools/list (code: -32601)
+[2026-05-29T14:17:10.770Z] [INFO] MCP Server initialized.
+[2026-05-29T14:17:10.771Z] [INFO] Server is running. Waiting for messages from stdin.
+[2026-05-29T14:17:10.778Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}}
+[2026-05-29T14:17:10.778Z] [INFO] Handling initialize with params: {"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}
+[2026-05-29T14:17:10.778Z] [INFO] Sent response for ID 0: {"protocolVersion":"2024-11-05","capabilities":{"resources":{"subscribe":false,"listChanged":false}},"serverInfo":{"name":"Node.js MCP Resource Server","version":"1.0.0"}}
+[2026-05-29T14:17:10.779Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","method":"notifications/initialized"}
+[2026-05-29T14:17:10.779Z] [WARN] No handler found for method: notifications/initialized
+[2026-05-29T14:17:10.779Z] [ERROR] Sent error for ID undefined: Method not found: notifications/initialized (code: -32601)
+[2026-05-29T14:17:10.779Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"progressToken":0}}}
+[2026-05-29T14:17:10.780Z] [WARN] No handler found for method: tools/list
+[2026-05-29T14:17:10.780Z] [ERROR] Sent error for ID 1: Method not found: tools/list (code: -32601)
+[2026-05-29T14:17:15.115Z] [INFO] MCP Server initialized.
+[2026-05-29T14:17:15.117Z] [INFO] Server is running. Waiting for messages from stdin.
+[2026-05-29T14:17:15.123Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}}
+[2026-05-29T14:17:15.123Z] [INFO] Handling initialize with params: {"protocolVersion":"2025-06-18","capabilities":{"elicitation":{}},"clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.133.0-alpha.1"}}
+[2026-05-29T14:17:15.123Z] [INFO] Sent response for ID 0: {"protocolVersion":"2024-11-05","capabilities":{"resources":{"subscribe":false,"listChanged":false}},"serverInfo":{"name":"Node.js MCP Resource Server","version":"1.0.0"}}
+[2026-05-29T14:17:15.124Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","method":"notifications/initialized"}
+[2026-05-29T14:17:15.124Z] [WARN] No handler found for method: notifications/initialized
+[2026-05-29T14:17:15.124Z] [ERROR] Sent error for ID undefined: Method not found: notifications/initialized (code: -32601)
+[2026-05-29T14:17:15.124Z] [DEBUG] Received raw message: {"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"progressToken":0}}}
+[2026-05-29T14:17:15.124Z] [WARN] No handler found for method: tools/list
+[2026-05-29T14:17:15.124Z] [ERROR] Sent error for ID 1: Method not found: tools/list (code: -32601)

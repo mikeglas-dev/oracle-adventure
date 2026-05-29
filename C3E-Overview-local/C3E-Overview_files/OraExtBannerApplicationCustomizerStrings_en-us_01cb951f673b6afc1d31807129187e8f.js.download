@@ -1,0 +1,11 @@
+define([], function () {
+    return {
+        Default: 'This site is externally shared. Please upload materials and ensure that all materials contain the appropriate classification label.',
+        Internal:
+            'This site is externally shared. Please only upload materials with a classification up to Confidential - Oracle Internal and ensure that all materials contain the appropriate classification label.',
+        Restricted:
+            'This site is externally shared. Please only upload materials with a classification up to Confidential - Oracle Restricted and ensure that all materials contain the appropriate classification label.',
+        HighlyRestricted:
+            'This site is externally shared. Please only upload materials with a classification up to Confidential - Oracle Highly Restricted and ensure that all materials contain the appropriate classification label.',
+    };
+});

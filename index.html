@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oracle Adventure</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <h1>Oracle Adventure</h1>
+        <p id="subtitle">Customer Centered Cloud Engagements</p>
+      </div>
+      <div class="meters" aria-label="Quest status">
+        <span id="phaseMeter">Phase 1 / 9</span>
+        <span id="locationMeter">Round Room</span>
+      </div>
+    </header>
+
+    <section class="game-layout">
+      <div class="board-wrap" id="boardWrap">
+        <canvas id="gameCanvas" width="1000" height="600" tabindex="0" aria-label="Oracle Adventure map"></canvas>
+        <div id="playerBubble" class="speech speech-player hidden"></div>
+        <div id="npcBubble" class="speech speech-npc hidden"></div>
+      </div>
+
+      <aside class="quest-panel">
+        <section class="phase-box">
+          <h2 id="currentPhase">Qualify</h2>
+          <p id="currentKeeper">Seek the first keeper.</p>
+          <div class="progress-track" id="phaseProgress" aria-label="Phase progress"></div>
+        </section>
+
+        <section class="dialogue-box">
+          <div class="log" id="questLog" aria-live="polite"></div>
+          <form id="speechForm" class="speech-form">
+            <input id="speechInput" type="text" autocomplete="off" spellcheck="true" placeholder="Ask or answer the keeper">
+            <button id="speakButton" type="submit" title="Speak">Speak</button>
+            <button id="helpButton" type="button" title="Help">?</button>
+          </form>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <div id="winnerModal" class="winner-modal hidden" role="dialog" aria-modal="true" aria-labelledby="winnerTitle">
+    <div class="winner-panel">
+      <h2 id="winnerTitle">Quest Complete</h2>
+      <pre id="winnerText"></pre>
+      <button id="restartButton" type="button">New quest</button>
+    </div>
+  </div>
+
+  <div id="lostModal" class="lost-modal hidden" role="dialog" aria-modal="true" aria-labelledby="lostTitle">
+    <div class="lost-panel">
+      <h2 id="lostTitle">You Chose Poorly</h2>
+      <pre id="lostText"></pre>
+      <button id="lostRestartButton" type="button">Try again</button>
+    </div>
+  </div>
+
+  <audio id="winSound" src="atari_win_sound.mp3" preload="auto"></audio>
+  <audio id="lostSound" src="chose-poorly.mp3" preload="auto"></audio>
+  <script src="game.js"></script>
+</body>
+</html>

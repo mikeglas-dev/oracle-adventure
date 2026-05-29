@@ -1,0 +1,48 @@
+phase_order,phase,activity_name
+1,Qualify,Co-Develop Account Strategy
+1,Qualify,Identify Key Fnfluencers + Build Influence Map
+1,Qualify,Identify Key Influencers + Build Influence Map
+2,Discover,EBC
+2,Discover,Engagement Risk Assessment
+2,Discover,Matilda Deep Discovery
+2,Discover,Matilda Rapid Assessment
+2,Discover,Opportunity Analysis
+2,Discover,Strategic Technical Approach
+3,Design,Matilda Service Comparison
+3,Design,RFP
+3,Design,Technical BOM Scoped
+3,Design,Technical Proposal
+4,Develop,Create POV
+4,Develop,Deliver Why OCI
+5,Prove,Assess Migration Risk and Define Mitigation Plan
+5,Prove,Custom Development & Automation
+5,Prove,Finalize Technical Proposal
+5,Prove,Financial and Migration Model Ramp
+5,Prove,POC / Pilot to Production
+5,Prove,Shared Comms Channel Implemented
+5,Prove,Technical Unblocking
+6,Win,Finalize Consumption Ramp
+6,Win,Retrospective Completed
+7,Support & Grow,Best Practice: FinOps
+7,Support & Grow,Best Practice: HA/DR implementation
+7,Support & Grow,Best Practice: Working Effectively with Support
+7,Support & Grow,Best Practice: Workload Optimization
+7,Support & Grow,Conduct Healthchecks
+7,Support & Grow,Create Consumption Forecasting Model
+7,Support & Grow,Custom Development & Automation
+7,Support & Grow,Customer Is A Reference
+7,Support & Grow,Deliver Customized Training
+7,Support & Grow,Deliver Interactive Lab Environment
+7,Support & Grow,Deliver OCI Roadmap
+7,Support & Grow,Deliver QBR
+7,Support & Grow,Delivery Innovation Sessions
+7,Support & Grow,Develop Certification Achievement Plan
+7,Support & Grow,Develop Customer Talent Succession Plan
+7,Support & Grow,Develop Long-Range Future State Architecture
+7,Support & Grow,Document Critical Escalation Path
+7,Support & Grow,Document Current Workload Inventory and Identify Migration Candidates
+7,Support & Grow,Execute Capacity Plan
+7,Support & Grow,Publish Joint Content Assets
+7,Support & Grow,SKU Lifecycle Management Plan
+7,Support & Grow,Secure Cloud World Speaker opportunity
+7,Support & Grow,Technical Unblocking

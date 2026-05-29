@@ -1,0 +1,25 @@
+I want to create an 8-bit graphical game for a hackathon. 
+The game should be based on a combination of zork and the movie 'quest for the holy grail'. 
+The game should be an Atari 2600 like adventure / roaming around game - and have sound effects to match that game type. Game play should be like the original Zelda game.
+The game should be playable in chrome. The game map should fit on a single screen - with all NPCs visible at all time. There should be a walking path like a wagon wheel - where the player uses arrow keys to move their player character from NPC o NPC. The game should animate the player walking from place to place.
+Create NPC characters based on the movie. 
+NPCs locations are based on locations from the original game zork. Locations should be taken from the file zork_locations.md and only that file. Locations should be set at game start and can change with each game run.
+Each character represents one of the c3e phases and should have knowledge of that phase. 
+The NPC's name should be a name from the movie and in () 'Keeper of the [phase] knowledge'. 
+The game should allow players (when interacting with the NPC) to ask questions about the phase. 
+The player must interact with the NPC in phase order. IF they ask a question of a character and have not yet interacted with an NPC from an earlier phase, the character will tell them that they need to talk to the earlier phase character first - and tell there the location of the NPC they are looking for.
+The NPC should use c3e_sharepoint_spider.md as a RAG source for answering questions - and only this document.
+In each interaction with the NPC from a phase - after the character asks the NPC a question and the NPC responds - the NPC should ask the player to tell the NPC what they have learned, and what they are going to do with their customer as a result of their understanding. If the character answers in a way that they understand the phase (based on the c3e_sharepoint_spider.md document then the NPC will tell player they are now ready to proceed to the next phase. The game should keep track of what phases the player has passed.
+IF the player asks for help - have the game respond with the text in the help.txt document.
+All player questions and NPC responses should appear as speech bubbles pointing to the player or NPC that is talking.
+When the player has successfully passes each phase, have the game announce they are a winner and show the text in the file 'winner.txt' and play the sound in the atari_win_sound.mp3 file.
+
+Oracle Adventure is an atarai 2600 like game designed to help solidify understanding of the OCI Engineering C3E process. It's intent is to gamify the process to enhance learning. With this knowledge, ECAs will be more effective in their roles.
+
+Future enhancements include text to speech for NPC characters, and linking to C3E assets to C3E assets so engineers can access them directly from the game.
+
+c3e activities were retrieved from alchemy using codex and the sqlcl mcp server
+c3e details were retrieved from Sharepoint using the codex Sharepoint plug-in. Condensed into a markup file
+locations were pulled from the oracle real-estate website
+NPC names are first names of people in the OCI org (plus Larry)
+

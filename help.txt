@@ -1,0 +1,1 @@
+THis is an a zelda like game. You must go from character to character in order. Ask them questions and answer their questions to proceed. TO win the game you must get through all characters.
