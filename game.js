@@ -83,6 +83,10 @@
     "c3e_sharepoint_spider.md"
   ];
   const KNOWLEDGE_SCROLL = "the scroll of all C3E knowledge";
+  const WINNER_HELP_URL = "https://orasenatdoracledigital05.objectstorage.us-ashburn-1.oci.customer-oci.com/p/PGtiXo400T1qwQp9LeGRpYFRfIKAHndxp2qc26xrCgw4X76O5FRF6NfOXi1l8FPF/n/orasenatdoracledigital05/b/bucket-winner/o/oracle-adventure-winner/winner-help.html";
+  const WINNER_REDIRECT_DELAY_MS = 6000;
+  const LOSER_HELP_URL = "https://orasenatdoracledigital05.objectstorage.us-ashburn-1.oci.customer-oci.com/p/rkrab0IwKFCUUUDkA_gL9beKcB6wvljCmDHaIA5TJNGzM6J1nq29k8mCQ1s2_iqL/n/orasenatdoracledigital05/b/bucket-winner/o/oracle-adventure-loser/loser-help.html";
+  const LOSER_REDIRECT_DELAY_MS = 6000;
 
   const STOPWORDS = new Set([
     "about", "above", "after", "again", "against", "also", "because", "been", "before", "being", "between",
@@ -116,6 +120,7 @@
   const questLog = document.getElementById("questLog");
   const speechForm = document.getElementById("speechForm");
   const speechInput = document.getElementById("speechInput");
+  const speakButton = document.getElementById("speakButton");
   const helpButton = document.getElementById("helpButton");
   const winnerModal = document.getElementById("winnerModal");
   const winnerText = document.getElementById("winnerText");
@@ -146,9 +151,14 @@
     activeNpc: null,
     hoverNpc: null,
     conversationMode: "question",
+    waitingForNpc: false,
+    agentUnavailable: false,
+    agentSessionIds: {},
     moveQueue: [],
     won: false,
     lost: false,
+    winnerRedirectTimer: null,
+    loserRedirectTimer: null,
     player: {
       x: map.center.x,
       y: map.center.y,
@@ -308,11 +318,14 @@
   }
 
   function resetGame() {
+    clearEndRedirects();
     state.completed = new Set();
     state.currentPhaseIndex = 0;
     state.activeNpc = null;
     state.hoverNpc = null;
     state.conversationMode = "question";
+    state.agentUnavailable = false;
+    state.agentSessionIds = {};
     state.moveQueue = [];
     state.won = false;
     state.lost = false;
@@ -584,7 +597,10 @@
     return best;
   }
 
-  function submitSpeech() {
+  async function submitSpeech() {
+    if (state.waitingForNpc) {
+      return;
+    }
     const text = speechInput.value.trim();
     if (!text) {
       return;
@@ -592,6 +608,16 @@
     speechInput.value = "";
     showPlayerBubble(text);
     addLog("Player", text);
+
+    if (isGotoWinCommand(text)) {
+      enterGotoWinFlow();
+      return;
+    }
+
+    if (isGogoLostCommand(text)) {
+      enterGogoLostFlow();
+      return;
+    }
 
     if (/^help\b/i.test(text) || text.trim() === "?") {
       respondWithHelp();
@@ -631,7 +657,7 @@
 
     if (state.conversationMode === "test") {
       if (wantsMoreInfo(text)) {
-        provideMoreInfo(npc, text);
+        await provideMoreInfo(npc, text);
         return;
       }
       evaluateReflection(npc, text);
@@ -639,19 +665,22 @@
     }
 
     if (state.conversationMode === "ready") {
-      handleReadiness(npc, text);
+      await handleReadiness(npc, text);
       return;
     }
 
-    const answer = answerQuestion(npc, text);
+    setNpcBusy(true);
+    showNpcBubble(npc.keeper + " consults the OCI Generative AI Agent...", npc.x, npc.y);
+    const answer = await answerQuestion(npc, text);
     const response = answer + readinessPrompt();
     state.conversationMode = "ready";
     showNpcBubble(response, npc.x, npc.y);
     addLog(npc.keeper, response);
     playTone("speak");
+    setNpcBusy(false);
   }
 
-  function handleReadiness(npc, text) {
+  async function handleReadiness(npc, text) {
     if (isReadyForTest(text)) {
       const response = "Then take the test. What did you learn about " + npc.phase.name + ", and what task will you do with your customer?";
       state.conversationMode = "test";
@@ -667,25 +696,41 @@
     }
 
     if (wantsMoreInfo(text)) {
-      provideMoreInfo(npc, text);
+      await provideMoreInfo(npc, text);
       return;
     }
 
-    const answer = answerQuestion(npc, text);
+    setNpcBusy(true);
+    showNpcBubble(npc.keeper + " consults the OCI Generative AI Agent...", npc.x, npc.y);
+    const answer = await answerQuestion(npc, text);
     const response = answer + readinessPrompt();
     state.conversationMode = "ready";
     showNpcBubble(response, npc.x, npc.y);
     addLog(npc.keeper, response);
     playTone("speak");
+    setNpcBusy(false);
   }
 
-  function provideMoreInfo(npc, text) {
-    const answer = answerQuestion(npc, moreInfoQuery(npc, text));
+  async function provideMoreInfo(npc, text) {
+    setNpcBusy(true);
+    showNpcBubble(npc.keeper + " consults the OCI Generative AI Agent...", npc.x, npc.y);
+    const answer = await answerQuestion(npc, moreInfoQuery(npc, text));
     const response = answer + readinessPrompt();
     state.conversationMode = "ready";
     showNpcBubble(response, npc.x, npc.y);
     addLog(npc.keeper, response);
     playTone("speak");
+    setNpcBusy(false);
+  }
+
+  function setNpcBusy(isBusy) {
+    state.waitingForNpc = isBusy;
+    speechInput.disabled = isBusy;
+    speakButton.disabled = isBusy;
+    speechInput.placeholder = isBusy ? "The keeper is consulting OCI..." : "Ask or answer the keeper";
+    if (!isBusy) {
+      speechInput.focus();
+    }
   }
 
   function readinessPrompt() {
@@ -716,6 +761,14 @@
     return /\?/.test(text) || /^(what|why|how|when|where|who|which|can|could|should|tell|explain|show|give|describe)\b/i.test(text.trim());
   }
 
+  function isGotoWinCommand(text) {
+    return /^goto:\s*win$/i.test(text.trim());
+  }
+
+  function isGogoLostCommand(text) {
+    return /^goto:\s*lost$/i.test(text.trim());
+  }
+
   function looksLikePhaseAnswer(npc, text) {
     const normalized = normalizeText(text);
     return matchesPhaseTask(normalized, phaseTasks(npc.phase.name));
@@ -729,7 +782,88 @@
     playTone("speak");
   }
 
-  function answerQuestion(npc, question) {
+  async function answerQuestion(npc, question) {
+    const agentAnswer = await answerQuestionWithAgent(npc, question);
+    if (agentAnswer) {
+      return agentAnswer;
+    }
+    return answerQuestionLocally(npc, question);
+  }
+
+  async function answerQuestionWithAgent(npc, question) {
+    if (state.agentUnavailable) {
+      return "";
+    }
+    try {
+      const response = await fetch("/api/npc-chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          phase: npc.phase.name,
+          keeper: npc.keeper,
+          sessionId: state.agentSessionIds[npc.phase.key] || "",
+          userMessage: buildAgentPrompt(npc, question)
+        })
+      });
+
+      if (!response.ok) {
+        state.agentUnavailable = true;
+        throw new Error("agent endpoint returned " + response.status);
+      }
+
+      const payload = await response.json();
+      if (payload && payload.sessionId) {
+        state.agentSessionIds[npc.phase.key] = payload.sessionId;
+      }
+      const answer = payload && payload.answer ? cleanAgentAnswer(payload.answer) : "";
+      return answer ? npc.keeper + " consults the C3E scrolls: " + answer : "";
+    } catch (error) {
+      state.agentUnavailable = true;
+      console.warn("OCI Generative AI Agent unavailable; using local C3E source.", error);
+      return "";
+    }
+  }
+
+  function buildAgentPrompt(npc, question) {
+    const phaseName = npc.phase.name;
+    const context = agentContextForQuestion(phaseName, question);
+    return [
+      "You are " + npc.label + " in the 8-bit game Oracle Adventure.",
+      "Answer the player's question for the " + phaseName + " phase.",
+      "Use only the C3E source excerpt below. If the excerpt does not contain the answer, say the scroll does not contain that detail.",
+      "Keep the answer concise, practical, and in character. Do not ask whether the player is ready for the test; the game will ask that after your answer.",
+      "C3E source excerpt:",
+      context,
+      "Player question:",
+      question
+    ].join("\n\n").slice(0, 12000);
+  }
+
+  function agentContextForQuestion(phaseName, question) {
+    const queryTokens = tokenize(question + " " + phaseName);
+    const detailMode = wantsArtifactDetail(question) || mentionsSpecificTaskOrArtifact(question, phaseName);
+    const chunks = detailMode ? getArtifactDetailChunks(phaseName, question) : getSourceChunks(phaseName);
+    if (!chunks.length) {
+      return "No matching excerpt was found in c3e_sharepoint_spider.md for " + phaseName + ".";
+    }
+    const ranked = rankChunks(chunks, queryTokens);
+    const selected = ranked.filter(function (item) { return item.score > 0; }).slice(0, 5);
+    const useful = selected.length ? selected : ranked.slice(0, 5);
+    return useful.map(function (item) {
+      return "- " + cleanChunk(item.chunk);
+    }).join("\n").slice(0, 9000);
+  }
+
+  function cleanAgentAnswer(answer) {
+    return String(answer)
+      .replace(/\s+/g, " ")
+      .replace(/^assistant:\s*/i, "")
+      .trim();
+  }
+
+  function answerQuestionLocally(npc, question) {
     const phaseName = npc.phase.name;
     const queryTokens = tokenize(question + " " + phaseName);
     if (wantsArtifactDetail(question) || mentionsSpecificTaskOrArtifact(question, phaseName)) {
@@ -1014,18 +1148,73 @@
   }
 
   function winGame() {
+    clearEndRedirects();
+    state.lost = false;
+    lostModal.classList.add("hidden");
     state.won = true;
     winnerText.textContent = state.winnerText;
     winnerModal.classList.remove("hidden");
     showNpcBubble(state.winnerText, state.player.x, state.player.y);
     playWinSound();
+    state.winnerRedirectTimer = window.setTimeout(function () {
+      if (state.won && !state.lost) {
+        window.location.href = WINNER_HELP_URL;
+      }
+    }, WINNER_REDIRECT_DELAY_MS);
+  }
+
+  function enterGotoWinFlow() {
+    clearEndRedirects();
+    state.moveQueue = [];
+    state.player.moving = false;
+    state.conversationMode = "question";
+    PHASES.forEach(function (_phase, index) {
+      state.completed.add(index);
+    });
+    state.currentPhaseIndex = PHASES.length;
+    updateHud();
+    addLog("System", "The winner gate opens.");
+    winGame();
+  }
+
+  function enterGogoLostFlow() {
+    const npc = {
+      label: "The forbidden gate",
+      keeper: "System",
+      x: state.player.x,
+      y: state.player.y
+    };
+    addLog("System", "The loser gate opens.");
+    loseGame(npc);
+  }
+
+  function clearEndRedirects() {
+    clearWinnerRedirect();
+    clearLoserRedirect();
+  }
+
+  function clearWinnerRedirect() {
+    if (state.winnerRedirectTimer) {
+      window.clearTimeout(state.winnerRedirectTimer);
+      state.winnerRedirectTimer = null;
+    }
+  }
+
+  function clearLoserRedirect() {
+    if (state.loserRedirectTimer) {
+      window.clearTimeout(state.loserRedirectTimer);
+      state.loserRedirectTimer = null;
+    }
   }
 
   function loseGame(npc) {
+    clearEndRedirects();
+    state.won = false;
     state.lost = true;
     state.moveQueue = [];
     state.player.moving = false;
     state.conversationMode = "question";
+    winnerModal.classList.add("hidden");
     const body = state.lostText || "You chose poorly.";
     const response = npc.label + " is outside the C3E path. " + body;
     lostText.textContent = body;
@@ -1033,6 +1222,11 @@
     showNpcBubble(response, npc.x, npc.y);
     addLog(npc.keeper, response);
     playLostSound();
+    state.loserRedirectTimer = window.setTimeout(function () {
+      if (state.lost && !state.won) {
+        window.location.href = LOSER_HELP_URL;
+      }
+    }, LOSER_REDIRECT_DELAY_MS);
   }
 
   function phaseKeywords(phaseName) {

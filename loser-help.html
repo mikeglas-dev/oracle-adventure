@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oracle Adventure Lost</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #130f10;
+      --panel: #241817;
+      --red: #d14d3d;
+      --gold: #f1c74a;
+      --text: #fff3bc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(0deg, rgba(255, 255, 255, 0.035) 50%, transparent 50%) 0 0 / 100% 4px,
+        radial-gradient(circle at 50% 32%, #3a1916 0, var(--bg) 58%);
+      color: var(--text);
+      font-family: "Courier New", monospace;
+    }
+
+    main {
+      width: min(960px, 94vw);
+      padding: 24px;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      color: var(--red);
+      font-size: clamp(1.8rem, 5vw, 3.75rem);
+      letter-spacing: 0;
+      text-shadow: 4px 4px 0 #070707;
+    }
+
+    img {
+      display: block;
+      width: min(100%, 760px);
+      height: auto;
+      margin: 0 auto;
+      border: 8px solid var(--red);
+      background: var(--panel);
+      image-rendering: pixelated;
+      box-shadow: 10px 10px 0 #070707;
+    }
+
+    p {
+      max-width: 720px;
+      margin: 22px auto 0;
+      color: var(--gold);
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>You Chose Poorly</h1>
+    <img src="Loser.png" alt="Oracle Adventure losing ending">
+    <p>The path was not the path. Return to the wheel and seek the keepers in order.</p>
+  </main>
+</body>
+</html>

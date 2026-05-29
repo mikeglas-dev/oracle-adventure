@@ -2,6 +2,11 @@ Oracle Adventure is an atarai 2600 like game designed to help solidify understan
 
 Future enhancements include text to speech for NPC characters, and linking to C3E assets to C3E assets so engineers can access them directly from the game.
 
+The NPC dialogue calls an OCI Generative AI Agent through the local Node server. By default it uses endpoint `ocid1.genaiagentendpoint.oc1.iad.amaaaaaaxzcdd4qasgtpcme244hx22er3rqfywvv3tdylhu5zbzkheq7dcvq`; set `OCI_GENAI_AGENT_ENDPOINT_ID` to override it. The server creates and reuses OCI Agent sessions for NPC conversations. Optional OCI CLI settings include `OCI_PROFILE`, `OCI_REGION`, and `OCI_CLI_AUTH`.
+The winner page is uploaded to Object Storage bucket `bucket-winner` under `oracle-adventure-winner/`. The game redirects to its pre-authenticated request after the player wins.
+The loser page is uploaded to Object Storage bucket `bucket-winner` under `oracle-adventure-loser/`. The game redirects to its pre-authenticated request after the player loses.
+OCI VM deployment: `http://129.213.81.129:8765/`
+
 c3e activities were retrieved from alchemy using codex and the sqlcl mcp server
 c3e details were retrieved from Sharepoint using the codex Sharepoint plug-in. Condensed into a markup file
 locations were pulled from the oracle real-estate website
