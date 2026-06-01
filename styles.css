@@ -195,6 +195,12 @@ h1 {
   color: var(--gold);
 }
 
+.log a {
+  color: #f6d15e;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
 .speech-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -252,6 +258,17 @@ h1 {
   background: #fff3bc;
   transform: translate(-50%, -115%);
   white-space: pre-wrap;
+}
+
+.speech a {
+  color: #064c80;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.speech a:hover,
+.log a:hover {
+  text-decoration-thickness: 2px;
 }
 
 .speech::after {

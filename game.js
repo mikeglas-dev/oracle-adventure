@@ -833,6 +833,7 @@
       "You are " + npc.label + " in the 8-bit game Oracle Adventure.",
       "Answer the player's question for the " + phaseName + " phase.",
       "Use only the C3E source excerpt below. If the excerpt does not contain the answer, say the scroll does not contain that detail.",
+      "If the excerpt includes a SharePoint link for a relevant asset, include that markdown link in your answer.",
       "Keep the answer concise, practical, and in character. Do not ask whether the player is ready for the test; the game will ask that after your answer.",
       "C3E source excerpt:",
       context,
@@ -891,7 +892,7 @@
   }
 
   function wantsArtifactDetail(question) {
-    return /\b(more|detail|details|artifact|artifacts|task|tasks|template|guide|output|outputs|deliverable|deliverables)\b/i.test(question);
+    return /\b(more|detail|details|asset|assets|artifact|artifacts|task|tasks|template|guide|output|outputs|deliverable|deliverables|document|documents|file|files|link|links|url)\b/i.test(question);
   }
 
   function mentionsSpecificTaskOrArtifact(question, phaseName) {
@@ -972,7 +973,8 @@
     }
     const chunks = [];
     getPhaseArtifactRows(phaseName).forEach(function (cells) {
-      chunks.push("Artifact detail: " + cells[0] + " (" + cells[2] + ", " + cells[1] + ") - " + cells[3]);
+      const link = cells[4] ? " Link: " + cells[4] : "";
+      chunks.push("Artifact detail: " + cells[0] + " (" + cells[2] + ", " + cells[1] + ") - " + cells[3] + link);
     });
 
     const outputLine = requiredOutputLine(phaseName);
@@ -1025,7 +1027,7 @@
     return source.split(/\r?\n/)
       .map(parseMarkdownRow)
       .filter(function (cells) {
-        if (!cells || cells.length < 4 || cells[0] === "Artifact") {
+        if (!cells || cells.length < 4 || /^(Artifact|Asset)$/i.test(cells[0])) {
           return false;
         }
         const artifact = normalizeText(cells[0]);
@@ -1339,12 +1341,61 @@
     return generic.indexOf(token) < 0;
   }
 
+  function renderLinkedText(element, text) {
+    const source = String(text || "");
+    const linkPattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<)]+)/g;
+    let cursor = 0;
+    let match;
+    element.textContent = "";
+
+    while ((match = linkPattern.exec(source))) {
+      appendTextWithBreaks(element, source.slice(cursor, match.index));
+      const label = match[1] || match[3];
+      const rawUrl = match[2] || match[3];
+      const cleanUrl = rawUrl.replace(/[.,;:]+$/, "");
+      const trailing = rawUrl.slice(cleanUrl.length);
+      if (isSafeHttpUrl(cleanUrl)) {
+        const anchor = document.createElement("a");
+        anchor.href = cleanUrl;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.textContent = label;
+        anchor.addEventListener("click", function (event) {
+          event.stopPropagation();
+        });
+        element.appendChild(anchor);
+        appendTextWithBreaks(element, trailing);
+      } else {
+        appendTextWithBreaks(element, match[0]);
+      }
+      cursor = match.index + match[0].length;
+    }
+
+    appendTextWithBreaks(element, source.slice(cursor));
+  }
+
+  function appendTextWithBreaks(element, text) {
+    const parts = String(text || "").split("\n");
+    parts.forEach(function (part, index) {
+      if (index > 0) {
+        element.appendChild(document.createElement("br"));
+      }
+      if (part) {
+        element.appendChild(document.createTextNode(part));
+      }
+    });
+  }
+
+  function isSafeHttpUrl(url) {
+    return /^https?:\/\//i.test(url);
+  }
+
   function addLog(speaker, text) {
     const line = document.createElement("div");
     line.className = "log-line";
     line.innerHTML = "<strong></strong> <span></span>";
     line.querySelector("strong").textContent = speaker + ":";
-    line.querySelector("span").textContent = " " + text;
+    renderLinkedText(line.querySelector("span"), " " + text);
     questLog.appendChild(line);
     questLog.scrollTop = questLog.scrollHeight;
   }
@@ -1358,7 +1409,7 @@
   }
 
   function showBubble(element, text, x, y) {
-    element.textContent = text;
+    renderLinkedText(element, text);
     element.dataset.x = String(x);
     element.dataset.y = String(y);
     element.classList.remove("hidden");
