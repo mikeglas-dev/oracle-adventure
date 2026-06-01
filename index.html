@@ -39,6 +39,20 @@
             <input id="speechInput" type="text" autocomplete="off" spellcheck="true" placeholder="Ask or answer the keeper">
             <button id="speakButton" type="submit" title="Speak">Speak</button>
             <button id="helpButton" type="button" title="Help">?</button>
+            <label class="voice-toggle" for="ttsToggle">
+              <input id="ttsToggle" type="checkbox">
+              <span>NPC voice</span>
+            </label>
+            <div class="language-controls">
+              <label for="playerLanguageSelect">
+                <span>Player language</span>
+                <select id="playerLanguageSelect"></select>
+              </label>
+              <label for="npcLanguageSelect">
+                <span>NPC language</span>
+                <select id="npcLanguageSelect"></select>
+              </label>
+            </div>
           </form>
         </section>
       </aside>

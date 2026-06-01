@@ -1,0 +1,638 @@
+{
+  "modelName": "TTS_2_NATURAL",
+  "languageCode": "en-US",
+  "generatedAt": "2026-06-01",
+  "sourceCommand": "oci speech voice list --model-name TTS_2_NATURAL --language-code <supportedLanguageCode> --all",
+  "supportedLanguageCodes": [
+    "en-US",
+    "en-GB",
+    "es-ES",
+    "pt-BR",
+    "fr-FR",
+    "it-IT",
+    "hi-IN",
+    "ja-JP",
+    "cmn-CN"
+  ],
+  "voices": [
+    {
+      "voiceId": "Brian",
+      "displayName": "Brian",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 192
+    },
+    {
+      "voiceId": "Annabelle",
+      "displayName": "Annabelle",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 148
+    },
+    {
+      "voiceId": "Bob",
+      "displayName": "Bob",
+      "gender": "MALE",
+      "defaultVoice": true,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 194
+    },
+    {
+      "voiceId": "Stacy",
+      "displayName": "Stacy",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 184
+    },
+    {
+      "voiceId": "Phil",
+      "displayName": "Phil",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 181
+    },
+    {
+      "voiceId": "Cindy",
+      "displayName": "Cindy",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 193
+    },
+    {
+      "voiceId": "Brad",
+      "displayName": "Brad",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 192
+    },
+    {
+      "voiceId": "Richard",
+      "displayName": "Richard",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 192
+    },
+    {
+      "voiceId": "Mary",
+      "displayName": "Mary",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Amanda",
+      "displayName": "Amanda",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Grace",
+      "displayName": "Grace",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Laura",
+      "displayName": "Laura",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Megan",
+      "displayName": "Megan",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Olivia",
+      "displayName": "Olivia",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Rachel",
+      "displayName": "Rachel",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Stephanie",
+      "displayName": "Stephanie",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Teresa",
+      "displayName": "Teresa",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Victoria",
+      "displayName": "Victoria",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Ashley",
+      "displayName": "Ashley",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Adam",
+      "displayName": "Adam",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Ethan",
+      "displayName": "Ethan",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Henry",
+      "displayName": "Henry",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Jack",
+      "displayName": "Jack",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Chris",
+      "displayName": "Chris",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Mark",
+      "displayName": "Mark",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Paul",
+      "displayName": "Paul",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Steve",
+      "displayName": "Steve",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Kevin",
+      "displayName": "Kevin",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Brian(HD)",
+      "displayName": "Brian(HD)",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 192
+    },
+    {
+      "voiceId": "Annabelle(HD)",
+      "displayName": "Annabelle(HD)",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 148
+    },
+    {
+      "voiceId": "Bob(HD)",
+      "displayName": "Bob(HD)",
+      "gender": "MALE",
+      "defaultVoice": true,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 194
+    },
+    {
+      "voiceId": "Stacy(HD)",
+      "displayName": "Stacy(HD)",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 184
+    },
+    {
+      "voiceId": "Phil(HD)",
+      "displayName": "Phil(HD)",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 181
+    },
+    {
+      "voiceId": "Cindy(HD)",
+      "displayName": "Cindy(HD)",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 193
+    },
+    {
+      "voiceId": "Richard(HD)",
+      "displayName": "Richard(HD)",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 192
+    },
+    {
+      "voiceId": "Jed(HD)",
+      "displayName": "Jed(HD)",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 182
+    },
+    {
+      "voiceId": "Michael(HD)",
+      "displayName": "Michael(HD)",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 172
+    },
+    {
+      "voiceId": "Finn(HD)",
+      "displayName": "Finn(HD)",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 168
+    },
+    {
+      "voiceId": "Nigel",
+      "displayName": "Nigel",
+      "languageCode": "en-GB",
+      "gender": "UNKNOWN_ENUM_VALUE",
+      "defaultVoice": true,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 195
+    },
+    {
+      "voiceId": "Charlotte",
+      "displayName": "Charlotte",
+      "languageCode": "en-GB",
+      "gender": "FEMALE",
+      "defaultVoice": true,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Emily",
+      "displayName": "Emily",
+      "languageCode": "en-GB",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Sophie",
+      "displayName": "Sophie",
+      "languageCode": "en-GB",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Isla",
+      "displayName": "Isla",
+      "languageCode": "en-GB",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Oliver",
+      "displayName": "Oliver",
+      "languageCode": "en-GB",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Harry",
+      "displayName": "Harry",
+      "languageCode": "en-GB",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Theo",
+      "displayName": "Theo",
+      "languageCode": "en-GB",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Arthur",
+      "displayName": "Arthur",
+      "languageCode": "en-GB",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Carmen",
+      "displayName": "Carmen",
+      "languageCode": "es-ES",
+      "gender": "FEMALE",
+      "defaultVoice": true,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Mateo",
+      "displayName": "Mateo",
+      "languageCode": "es-ES",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Lucas",
+      "displayName": "Lucas",
+      "languageCode": "es-ES",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Mariana",
+      "displayName": "Mariana",
+      "languageCode": "pt-BR",
+      "gender": "FEMALE",
+      "defaultVoice": true,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Felix",
+      "displayName": "Felix",
+      "languageCode": "pt-BR",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Miguel",
+      "displayName": "Miguel",
+      "languageCode": "pt-BR",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Claire",
+      "displayName": "Claire",
+      "languageCode": "fr-FR",
+      "gender": "FEMALE",
+      "defaultVoice": true,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Giulia",
+      "displayName": "Giulia",
+      "languageCode": "it-IT",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Luca",
+      "displayName": "Luca",
+      "languageCode": "it-IT",
+      "gender": "MALE",
+      "defaultVoice": true,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Asha",
+      "displayName": "Asha",
+      "languageCode": "hi-IN",
+      "gender": "FEMALE",
+      "defaultVoice": true,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Priya",
+      "displayName": "Priya",
+      "languageCode": "hi-IN",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Arjun",
+      "displayName": "Arjun",
+      "languageCode": "hi-IN",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Rahul",
+      "displayName": "Rahul",
+      "languageCode": "hi-IN",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Aiko",
+      "displayName": "Aiko",
+      "languageCode": "ja-JP",
+      "gender": "FEMALE",
+      "defaultVoice": true,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Hana",
+      "displayName": "Hana",
+      "languageCode": "ja-JP",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Sakura",
+      "displayName": "Sakura",
+      "languageCode": "ja-JP",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Yuki",
+      "displayName": "Yuki",
+      "languageCode": "ja-JP",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Satoshi",
+      "displayName": "Satoshi",
+      "languageCode": "ja-JP",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Jia",
+      "displayName": "Jia",
+      "languageCode": "cmn-CN",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Ling",
+      "displayName": "Ling",
+      "languageCode": "cmn-CN",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Mei",
+      "displayName": "Mei",
+      "languageCode": "cmn-CN",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Xiu",
+      "displayName": "Xiu",
+      "languageCode": "cmn-CN",
+      "gender": "FEMALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Jun",
+      "displayName": "Jun",
+      "languageCode": "cmn-CN",
+      "gender": "MALE",
+      "defaultVoice": true,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Hao",
+      "displayName": "Hao",
+      "languageCode": "cmn-CN",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Ming",
+      "displayName": "Ming",
+      "languageCode": "cmn-CN",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    },
+    {
+      "voiceId": "Wang",
+      "displayName": "Wang",
+      "languageCode": "cmn-CN",
+      "gender": "MALE",
+      "defaultVoice": false,
+      "sampleRateInHertz": 24000,
+      "wordsPerMinute": 185
+    }
+  ]
+}

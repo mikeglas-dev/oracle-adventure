@@ -74,13 +74,40 @@
   ];
 
   const NPC_COUNT = PHASES.length + TRAP_PHASES.length;
+  const ENGLISH_LANGUAGE_CODE = "en";
+  const DEFAULT_TTS_LANGUAGE_CODE = "en-US";
+  const TTS_LANGUAGE_BY_TRANSLATION_LANGUAGE = {
+    "en": "en-US",
+    "en-us": "en-US",
+    "en-gb": "en-GB",
+    "es": "es-ES",
+    "es-es": "es-ES",
+    "pt-br": "pt-BR",
+    pt: "pt-BR",
+    "fr": "fr-FR",
+    "fr-fr": "fr-FR",
+    "fr-ca": "fr-FR",
+    "it": "it-IT",
+    "it-it": "it-IT",
+    "ja": "ja-JP",
+    "ja-jp": "ja-JP",
+    "zh": "cmn-CN",
+    "zh-cn": "cmn-CN",
+    "zh-tw": "cmn-CN",
+    "cmn": "cmn-CN",
+    "cmn-cn": "cmn-CN",
+    "hi": "hi-IN",
+    "hi-in": "hi-IN"
+  };
 
   const REQUIRED_FILES = [
     "help.txt",
     "winner.txt",
     "NPCs.txt",
     "zork_locations.md",
-    "c3e_sharepoint_spider.md"
+    "c3e_sharepoint_spider.md",
+    "tts_voices.json",
+    "translation_languages.json"
   ];
   const KNOWLEDGE_SCROLL = "the scroll of all C3E knowledge";
   const WINNER_HELP_URL = "https://orasenatdoracledigital05.objectstorage.us-ashburn-1.oci.customer-oci.com/p/PGtiXo400T1qwQp9LeGRpYFRfIKAHndxp2qc26xrCgw4X76O5FRF6NfOXi1l8FPF/n/orasenatdoracledigital05/b/bucket-winner/o/oracle-adventure-winner/winner-help.html";
@@ -124,6 +151,9 @@
   const speechInput = document.getElementById("speechInput");
   const speakButton = document.getElementById("speakButton");
   const helpButton = document.getElementById("helpButton");
+  const ttsToggle = document.getElementById("ttsToggle");
+  const playerLanguageSelect = document.getElementById("playerLanguageSelect");
+  const npcLanguageSelect = document.getElementById("npcLanguageSelect");
   const winnerModal = document.getElementById("winnerModal");
   const winnerText = document.getElementById("winnerText");
   const restartButton = document.getElementById("restartButton");
@@ -153,6 +183,9 @@
     fastForwardOfferCooldown: 0,
     npcNames: [],
     zorkLocations: [],
+    ttsVoices: [],
+    ttsLanguageCodes: new Set([ENGLISH_LANGUAGE_CODE]),
+    translationLanguages: [],
     npcs: [],
     completed: new Set(),
     currentPhaseIndex: 0,
@@ -162,6 +195,15 @@
     waitingForNpc: false,
     agentUnavailable: false,
     agentSessionIds: {},
+    ttsEnabled: false,
+    ttsAudio: null,
+    ttsUrl: "",
+    ttsAbort: null,
+    ttsSequence: 0,
+    ttsUnavailable: false,
+    translationUnavailable: false,
+    npcTranslationSequence: 0,
+    unsupportedSpeechLanguageWarnings: new Set(),
     moveQueue: [],
     won: false,
     lost: false,
@@ -203,6 +245,8 @@
       fetchText("NPCs.txt"),
       fetchText("zork_locations.md"),
       fetchText("c3e_sharepoint_spider.md"),
+      fetchText("tts_voices.json"),
+      fetchText("translation_languages.json"),
       fetchText("lost.txt")
     ]).then(function (values) {
       const missing = REQUIRED_FILES.filter(function (_file, index) {
@@ -214,7 +258,10 @@
       state.npcNames = values[2] ? parseLineList(values[2]) : [];
       state.zorkLocations = values[3] ? parseLocations(values[3]) : [];
       state.c3eSource = values[4] ? values[4].trim() : "";
-      state.lostText = values[5] ? values[5].trim() : "";
+      state.ttsVoices = values[5] ? parseTtsVoices(values[5]) : [];
+      state.ttsLanguageCodes = values[5] ? parseTtsLanguageCodes(values[5]) : new Set([ENGLISH_LANGUAGE_CODE]);
+      state.translationLanguages = values[6] ? parseTranslationLanguages(values[6]) : [];
+      state.lostText = values[7] ? values[7].trim() : "";
 
       if (state.npcNames.length < NPC_COUNT) {
         missing.push("NPCs.txt needs at least " + NPC_COUNT + " names");
@@ -222,11 +269,18 @@
       if (state.zorkLocations.length < NPC_COUNT) {
         missing.push("zork_locations.md needs at least " + NPC_COUNT + " locations");
       }
+      if (state.ttsVoices.length < NPC_COUNT) {
+        missing.push("tts_voices.json needs at least " + NPC_COUNT + " voices");
+      }
+      if (!state.translationLanguages.length) {
+        missing.push("translation_languages.json needs OCI translation languages");
+      }
       if (missing.length) {
         showBootError(missing);
         return;
       }
 
+      populateLanguageSelects();
       resetGame();
       bindEvents();
       state.booted = true;
@@ -262,6 +316,26 @@
 
     helpButton.addEventListener("click", function () {
       respondWithHelp();
+    });
+
+    ttsToggle.addEventListener("change", function () {
+      state.ttsEnabled = ttsToggle.checked;
+      state.ttsUnavailable = false;
+      warnIfUnsupportedSpeechLanguage(selectedNpcLanguage());
+      if (!state.ttsEnabled) {
+        stopNpcSpeech();
+      }
+    });
+
+    playerLanguageSelect.addEventListener("change", function () {
+      state.translationUnavailable = false;
+    });
+
+    npcLanguageSelect.addEventListener("change", function () {
+      state.translationUnavailable = false;
+      state.npcTranslationSequence += 1;
+      warnIfUnsupportedSpeechLanguage(selectedNpcLanguage());
+      stopNpcSpeech();
     });
 
     restartButton.addEventListener("click", function () {
@@ -310,6 +384,101 @@
     return parsed;
   }
 
+  function parseTtsVoices(text) {
+    try {
+      const payload = JSON.parse(text);
+      const voices = Array.isArray(payload) ? payload : payload.voices;
+      if (!Array.isArray(voices)) {
+        return [];
+      }
+
+      return voices.map(function (voice) {
+        const voiceId = String(voice.voiceId || voice["voice-id"] || "").trim();
+        if (!voiceId) {
+          return null;
+        }
+        return {
+          voiceId: voiceId,
+          displayName: String(voice.displayName || voice["display-name"] || voiceId).trim() || voiceId,
+          languageCode: String(voice.languageCode || voice["language-code"] || payload.languageCode || DEFAULT_TTS_LANGUAGE_CODE).trim(),
+          gender: String(voice.gender || "").trim()
+        };
+      }).filter(Boolean);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function parseTtsLanguageCodes(text) {
+    try {
+      const payload = JSON.parse(text);
+      const voices = Array.isArray(payload) ? payload : payload.voices;
+      const codes = new Set();
+      addSpeechLanguageCode(codes, payload.languageCode || payload["language-code"]);
+      if (Array.isArray(voices)) {
+        voices.forEach(function (voice) {
+          addSpeechLanguageCode(codes, voice.languageCode || voice["language-code"]);
+        });
+      }
+      if (!codes.size) {
+        addSpeechLanguageCode(codes, ENGLISH_LANGUAGE_CODE);
+      }
+      return codes;
+    } catch (error) {
+      return new Set([ENGLISH_LANGUAGE_CODE]);
+    }
+  }
+
+  function addSpeechLanguageCode(codes, languageCode) {
+      const normalized = normalizeLanguageCode(languageCode);
+      if (!normalized) {
+        return;
+      }
+      codes.add(normalized);
+      codes.add(normalized.split("-")[0]);
+  }
+
+  function parseTranslationLanguages(text) {
+    try {
+      const payload = JSON.parse(text);
+      const languages = Array.isArray(payload) ? payload : payload.languages;
+      if (!Array.isArray(languages)) {
+        return [];
+      }
+
+      return languages.map(function (language) {
+        const code = String(language.code || language.languageCode || language["language-code"] || "").trim();
+        if (!code) {
+          return null;
+        }
+        return {
+          code: code,
+          name: String(language.name || language.displayName || code).trim() || code
+        };
+      }).filter(Boolean);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function populateLanguageSelects() {
+    fillLanguageSelect(playerLanguageSelect, ENGLISH_LANGUAGE_CODE);
+    fillLanguageSelect(npcLanguageSelect, ENGLISH_LANGUAGE_CODE);
+  }
+
+  function fillLanguageSelect(select, defaultCode) {
+    select.innerHTML = "";
+    state.translationLanguages.forEach(function (language) {
+      const option = document.createElement("option");
+      option.value = language.code;
+      option.textContent = language.name + " (" + language.code + ")";
+      select.appendChild(option);
+    });
+    select.value = state.translationLanguages.some(function (language) {
+      return language.code === defaultCode;
+    }) ? defaultCode : (state.translationLanguages[0] ? state.translationLanguages[0].code : "");
+  }
+
   function showBootError(missing) {
     drawBackground(0);
     drawText("QUEST CANNOT BEGIN", map.center.x, map.center.y - 24, "#f1c74a", 24, "center");
@@ -333,6 +502,12 @@
     state.conversationMode = "question";
     state.agentUnavailable = false;
     state.agentSessionIds = {};
+    state.ttsEnabled = Boolean(ttsToggle.checked);
+    state.ttsUnavailable = false;
+    state.translationUnavailable = false;
+    state.npcTranslationSequence += 1;
+    state.unsupportedSpeechLanguageWarnings = new Set();
+    stopNpcSpeech();
     state.fastForwardQuizUnavailable = false;
     state.fastForwardWrongCount = 0;
     state.fastForwardAttempted = new Set();
@@ -368,11 +543,13 @@
     const wheelSpecs = shuffle(specs.slice());
     const locations = shuffle(state.zorkLocations.slice()).slice(0, wheelSpecs.length);
     const names = shuffle(state.npcNames.slice()).slice(0, wheelSpecs.length);
+    const voiceAssignments = createNpcVoiceAssignments(wheelSpecs.length);
     return wheelSpecs.map(function (spec, index) {
       const angle = -Math.PI / 2 + index * (Math.PI * 2 / wheelSpecs.length);
       const x = map.center.x + Math.cos(angle) * map.radius;
       const y = map.center.y + Math.sin(angle) * map.radius;
       const keeper = names[index];
+      const defaultVoice = voiceAssignments[DEFAULT_TTS_LANGUAGE_CODE] && voiceAssignments[DEFAULT_TTS_LANGUAGE_CODE][index];
       return {
         id: "npc-" + index,
         ringIndex: index,
@@ -381,12 +558,36 @@
         phase: spec.phase,
         keeper: keeper,
         label: keeper + " (Keeper of the " + spec.phase.name + " knowledge)",
+        ttsVoiceId: defaultVoice ? defaultVoice.voiceId : "",
+        ttsVoiceName: defaultVoice ? defaultVoice.displayName : "",
+        ttsVoicesByLanguage: voiceAssignments,
         location: locations[index],
         x: x,
         y: y,
         angle: angle
       };
     });
+  }
+
+  function createNpcVoiceAssignments(count) {
+    const groups = groupTtsVoicesByLanguage();
+    const assignments = {};
+    Object.keys(groups).forEach(function (languageCode) {
+      const voices = shuffle(groups[languageCode].slice());
+      assignments[languageCode] = Array.from({ length: count }, function (_item, index) {
+        return voices[index % voices.length];
+      });
+    });
+    return assignments;
+  }
+
+  function groupTtsVoicesByLanguage() {
+    return state.ttsVoices.reduce(function (groups, voice) {
+      const languageCode = voice.languageCode || DEFAULT_TTS_LANGUAGE_CODE;
+      groups[languageCode] = groups[languageCode] || [];
+      groups[languageCode].push(voice);
+      return groups;
+    }, {});
   }
 
   function shuffle(items) {
@@ -646,6 +847,8 @@
       return;
     }
 
+    const gameText = await translatePlayerText(text);
+
     if (state.won || state.lost) {
       const response = "This quest has ended. Start a new quest to speak again.";
       showNpcBubble(response, state.player.x, state.player.y - 18);
@@ -655,7 +858,7 @@
     }
 
     if (state.conversationMode === "fastForwardAnswer") {
-      await handleFastForwardAnswer(state.activeNpc || currentTarget(), text);
+      await handleFastForwardAnswer(state.activeNpc || currentTarget(), gameText);
       return;
     }
 
@@ -683,27 +886,27 @@
     }
 
     if (state.conversationMode === "fastForwardOffer") {
-      await handleFastForwardOffer(npc, text);
+      await handleFastForwardOffer(npc, gameText);
       return;
     }
 
     if (state.conversationMode === "test") {
-      if (wantsMoreInfo(text)) {
-        await provideMoreInfo(npc, text);
+      if (wantsMoreInfo(gameText)) {
+        await provideMoreInfo(npc, gameText);
         return;
       }
-      evaluateReflection(npc, text);
+      evaluateReflection(npc, gameText);
       return;
     }
 
     if (state.conversationMode === "ready") {
-      await handleReadiness(npc, text);
+      await handleReadiness(npc, gameText);
       return;
     }
 
     setNpcBusy(true);
     showNpcBubble(npc.keeper + " consults the OCI Generative AI Agent...", npc.x, npc.y);
-    const answer = await answerQuestion(npc, text);
+    const answer = await answerQuestion(npc, gameText);
     const response = maybeAppendFastForwardOffer(npc, answer + readinessPrompt(), "ready");
     showNpcBubble(response, npc.x, npc.y);
     addLog(npc.keeper, response);
@@ -1616,14 +1819,144 @@
     return /^https?:\/\//i.test(url);
   }
 
-  function addLog(speaker, text) {
+  function addLog(speaker, text, options) {
     const line = document.createElement("div");
     line.className = "log-line";
     line.innerHTML = "<strong></strong> <span></span>";
     line.querySelector("strong").textContent = speaker + ":";
-    renderLinkedText(line.querySelector("span"), " " + text);
+    const textElement = line.querySelector("span");
+    renderLinkedText(textElement, " " + text);
     questLog.appendChild(line);
     questLog.scrollTop = questLog.scrollHeight;
+    translateLogLine(speaker, text, textElement, options || {});
+  }
+
+  function selectedPlayerLanguage() {
+    return playerLanguageSelect.value || ENGLISH_LANGUAGE_CODE;
+  }
+
+  function selectedNpcLanguage() {
+    return npcLanguageSelect.value || ENGLISH_LANGUAGE_CODE;
+  }
+
+  function normalizeLanguageCode(languageCode) {
+    return String(languageCode || "").trim().toLowerCase();
+  }
+
+  function speechLanguageAvailable(languageCode) {
+    const normalized = normalizeLanguageCode(ttsLanguageCodeForTranslation(languageCode));
+    if (!normalized) {
+      return true;
+    }
+    return state.ttsLanguageCodes.has(normalized) || state.ttsLanguageCodes.has(normalized.split("-")[0]);
+  }
+
+  function ttsLanguageCodeForTranslation(languageCode) {
+    const normalized = normalizeLanguageCode(languageCode);
+    if (TTS_LANGUAGE_BY_TRANSLATION_LANGUAGE[normalized]) {
+      return TTS_LANGUAGE_BY_TRANSLATION_LANGUAGE[normalized];
+    }
+
+    const exactVoice = state.ttsVoices.find(function (voice) {
+      return normalizeLanguageCode(voice.languageCode) === normalized;
+    });
+    if (exactVoice) {
+      return exactVoice.languageCode;
+    }
+
+    const baseLanguage = normalized.split("-")[0];
+    const regionalVoice = state.ttsVoices.find(function (voice) {
+      return normalizeLanguageCode(voice.languageCode).split("-")[0] === baseLanguage;
+    });
+    return regionalVoice ? regionalVoice.languageCode : languageCode;
+  }
+
+  function languageName(languageCode) {
+    const normalized = normalizeLanguageCode(languageCode);
+    const language = state.translationLanguages.find(function (item) {
+      return normalizeLanguageCode(item.code) === normalized;
+    });
+    return language ? language.name : languageCode;
+  }
+
+  function warnIfUnsupportedSpeechLanguage(languageCode) {
+    const normalized = normalizeLanguageCode(languageCode);
+    if (!state.ttsEnabled || !normalized || speechLanguageAvailable(normalized)) {
+      return;
+    }
+    if (state.unsupportedSpeechLanguageWarnings.has(normalized)) {
+      return;
+    }
+    state.unsupportedSpeechLanguageWarnings.add(normalized);
+    addLog("System", "I do not know how to speak " + languageName(languageCode) + " yet, so NPC voice will speak in English.", { skipTranslation: true });
+  }
+
+  async function translatePlayerText(text) {
+    const languageCode = selectedPlayerLanguage();
+    if (languageCode === ENGLISH_LANGUAGE_CODE) {
+      return text;
+    }
+    return translateText(text, languageCode, ENGLISH_LANGUAGE_CODE);
+  }
+
+  async function translateNpcText(text) {
+    const languageCode = selectedNpcLanguage();
+    if (languageCode === ENGLISH_LANGUAGE_CODE) {
+      return text;
+    }
+    return translateText(text, ENGLISH_LANGUAGE_CODE, languageCode);
+  }
+
+  async function translateText(text, sourceLanguageCode, targetLanguageCode) {
+    if (!text || sourceLanguageCode === targetLanguageCode || state.translationUnavailable) {
+      return text;
+    }
+
+    try {
+      const response = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: text,
+          sourceLanguageCode: sourceLanguageCode,
+          targetLanguageCode: targetLanguageCode
+        })
+      });
+      if (!response.ok) {
+        throw new Error("translate endpoint returned " + response.status);
+      }
+      const payload = await response.json();
+      return payload && payload.text ? String(payload.text) : text;
+    } catch (error) {
+      state.translationUnavailable = true;
+      addLog("System", "OCI translation is unavailable; using original language.");
+      return text;
+    }
+  }
+
+  function translateLogLine(speaker, text, textElement, options) {
+    if (options.skipTranslation || !isNpcSpeaker(speaker)) {
+      return;
+    }
+
+    const languageCode = selectedNpcLanguage();
+    if (languageCode === ENGLISH_LANGUAGE_CODE || state.translationUnavailable) {
+      return;
+    }
+
+    translateNpcText(text).then(function (translatedText) {
+      if (!textElement.isConnected || selectedNpcLanguage() !== languageCode) {
+        return;
+      }
+      renderLinkedText(textElement, " " + translatedText);
+      questLog.scrollTop = questLog.scrollHeight;
+    });
+  }
+
+  function isNpcSpeaker(speaker) {
+    return state.npcs.some(function (npc) {
+      return npc.keeper === speaker;
+    });
   }
 
   function showPlayerBubble(text) {
@@ -1631,7 +1964,63 @@
   }
 
   function showNpcBubble(text, x, y) {
-    showBubble(npcBubble, text, x, y - 34);
+    const npc = resolveNpcSpeaker(x, y);
+    const languageCode = selectedNpcLanguage();
+    const sequence = ++state.npcTranslationSequence;
+    if (languageCode === ENGLISH_LANGUAGE_CODE || state.translationUnavailable) {
+      showBubble(npcBubble, text, x, y - 34);
+      speakNpcText(speechPlanForNpcLanguage(text, text, languageCode, npc));
+      return;
+    }
+
+    showBubble(npcBubble, "...", x, y - 34);
+    translateNpcText(text).then(function (translatedText) {
+      if (sequence !== state.npcTranslationSequence) {
+        return;
+      }
+      showBubble(npcBubble, translatedText, x, y - 34);
+      speakNpcText(speechPlanForNpcLanguage(text, translatedText, languageCode, npc));
+    });
+  }
+
+  function speechPlanForNpcLanguage(englishText, translatedText, languageCode, npc) {
+    if (speechLanguageAvailable(languageCode)) {
+      const ttsLanguageCode = ttsLanguageCodeForTranslation(languageCode);
+      const voice = ttsVoiceForNpcLanguage(npc, ttsLanguageCode);
+      return {
+        text: translatedText,
+        languageCode: ttsLanguageCode,
+        voiceId: voice ? voice.voiceId : ""
+      };
+    }
+    warnIfUnsupportedSpeechLanguage(languageCode);
+    const voice = ttsVoiceForNpcLanguage(npc, DEFAULT_TTS_LANGUAGE_CODE);
+    return {
+      text: englishText,
+      languageCode: DEFAULT_TTS_LANGUAGE_CODE,
+      voiceId: voice ? voice.voiceId : ""
+    };
+  }
+
+  function ttsVoiceForNpcLanguage(npc, languageCode) {
+    if (!npc || !npc.ttsVoicesByLanguage) {
+      return null;
+    }
+    const voices = npc.ttsVoicesByLanguage[languageCode] || npc.ttsVoicesByLanguage[DEFAULT_TTS_LANGUAGE_CODE] || [];
+    return voices[npc.ringIndex % voices.length] || null;
+  }
+
+  function resolveNpcSpeaker(x, y) {
+    const exactNpc = state.npcs.find(function (npc) {
+      return Math.abs(npc.x - x) < 1 && Math.abs(npc.y - y) < 1;
+    });
+    if (exactNpc) {
+      return exactNpc;
+    }
+    if (state.activeNpc && Math.hypot(state.activeNpc.x - x, state.activeNpc.y - y) < 80) {
+      return state.activeNpc;
+    }
+    return null;
   }
 
   function showBubble(element, text, x, y) {
@@ -1640,6 +2029,102 @@
     element.dataset.y = String(y);
     element.classList.remove("hidden");
     positionBubble(element);
+  }
+
+  function speakNpcText(plan) {
+    if (!state.ttsEnabled || state.ttsUnavailable || state.won || state.lost) {
+      return;
+    }
+
+    const speechPlan = typeof plan === "string" ? { text: plan } : (plan || {});
+    const text = speechPlan.text || "";
+    const speechText = cleanSpeechText(text);
+    if (!speechText) {
+      return;
+    }
+
+    const sequence = ++state.ttsSequence;
+    if (state.ttsAbort) {
+      state.ttsAbort.abort();
+      state.ttsAbort = null;
+    }
+
+    const controller = new AbortController();
+    state.ttsAbort = controller;
+    fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: speechText,
+        voiceId: speechPlan.voiceId || "",
+        languageCode: speechPlan.languageCode || DEFAULT_TTS_LANGUAGE_CODE
+      }),
+      signal: controller.signal
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("tts endpoint returned " + response.status);
+        }
+        return response.blob();
+      })
+      .then(function (blob) {
+        if (!state.ttsEnabled || sequence !== state.ttsSequence) {
+          return;
+        }
+        playNpcSpeechBlob(blob);
+      })
+      .catch(function (error) {
+        if (error && error.name === "AbortError") {
+          return;
+        }
+        state.ttsUnavailable = true;
+        addLog("System", "NPC voice is unavailable from OCI Text to Speech.");
+      });
+  }
+
+  function playNpcSpeechBlob(blob) {
+    stopNpcSpeech(false);
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    state.ttsAudio = audio;
+    state.ttsUrl = url;
+    audio.addEventListener("ended", cleanupNpcSpeechUrl, { once: true });
+    audio.addEventListener("error", cleanupNpcSpeechUrl, { once: true });
+    audio.play().catch(function () {
+      cleanupNpcSpeechUrl();
+    });
+  }
+
+  function stopNpcSpeech(advanceSequence) {
+    if (advanceSequence !== false) {
+      state.ttsSequence += 1;
+    }
+    if (state.ttsAbort) {
+      state.ttsAbort.abort();
+      state.ttsAbort = null;
+    }
+    if (state.ttsAudio) {
+      state.ttsAudio.pause();
+      state.ttsAudio.src = "";
+      state.ttsAudio = null;
+    }
+    cleanupNpcSpeechUrl();
+  }
+
+  function cleanupNpcSpeechUrl() {
+    if (state.ttsUrl) {
+      URL.revokeObjectURL(state.ttsUrl);
+      state.ttsUrl = "";
+    }
+  }
+
+  function cleanSpeechText(text) {
+    return String(text || "")
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1 link")
+      .replace(/https?:\/\/[^\s)]+/g, "link")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 1800);
   }
 
   function hideBubble(element) {

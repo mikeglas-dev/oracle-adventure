@@ -2,6 +2,7 @@
 
 const http = require("http");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { execFile } = require("child_process");
 
@@ -12,21 +13,39 @@ const configuredAgentEndpoint = process.env.OCI_GENAI_AGENT_ENDPOINT_ID || "ocid
 const ociCliPath = process.env.OCI_CLI_PATH || "oci";
 const ociProfile = process.env.OCI_CLI_PROFILE || process.env.OCI_PROFILE || "";
 const ociRegion = process.env.OCI_REGION || "";
-const ociAuth = process.env.OCI_CLI_AUTH || "";
+const hasOciConfig = fs.existsSync(path.join(os.homedir(), ".oci", "config"));
+const ociAuth = process.env.OCI_CLI_AUTH || (hasOciConfig ? "" : "instance_principal");
 const ociCompartmentId = process.env.OCI_COMPARTMENT_ID || "";
 const ociChatTimeoutMs = Number(process.env.OCI_GENAI_AGENT_TIMEOUT_MS || 45000);
+const ociTtsTimeoutMs = Number(process.env.OCI_TTS_TIMEOUT_MS || 60000);
+const ociTtsVoiceId = process.env.OCI_TTS_VOICE_ID || "Bob";
+const ociTtsModelName = process.env.OCI_TTS_MODEL_NAME || "TTS_2_NATURAL";
+const ociTtsLanguageCode = process.env.OCI_TTS_LANGUAGE_CODE || "en-US";
+const ociTtsSampleRate = Number(process.env.OCI_TTS_SAMPLE_RATE || 24000);
+const ociTtsCompartmentId = process.env.OCI_TTS_COMPARTMENT_ID || ociCompartmentId;
+const ociLanguageCompartmentId = process.env.OCI_LANGUAGE_COMPARTMENT_ID || ociCompartmentId || ociTtsCompartmentId;
+const ociLanguageTimeoutMs = Number(process.env.OCI_LANGUAGE_TIMEOUT_MS || 45000);
 let resolvedAgentEndpointId = "";
 let quizCache = null;
 let quizCacheMtimeMs = 0;
+let ttsVoiceIdCache = null;
+let ttsVoiceCache = null;
+let ttsVoiceCacheMtimeMs = 0;
+let translationLanguageCache = null;
+let translationLanguageCacheMtimeMs = 0;
 
 const privateFiles = new Set([
-  "questions.txt"
+  "questions.txt",
+  "serve-game.js",
+  "game_server.err.log",
+  "game_server.out.log"
 ]);
 
 const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
   ".md": "text/markdown; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
   ".mp3": "audio/mpeg"
@@ -45,6 +64,14 @@ const server = http.createServer((request, response) => {
     }
     if (request.method === "POST" && url.pathname === "/api/quiz-answer") {
       handleQuizAnswer(request, response);
+      return;
+    }
+    if (request.method === "POST" && url.pathname === "/api/tts") {
+      handleTextToSpeech(request, response);
+      return;
+    }
+    if (request.method === "POST" && url.pathname === "/api/translate") {
+      handleTranslate(request, response);
       return;
     }
 
@@ -120,6 +147,68 @@ async function handleQuizQuestion(request, response) {
   }
 }
 
+async function handleTextToSpeech(request, response) {
+  try {
+    const body = await readJsonBody(request);
+    const text = cleanTtsText(body.text);
+    if (!text) {
+      sendJson(response, 400, { error: "text is required" });
+      return;
+    }
+
+    const voice = selectTtsVoice(body.voiceId, body.languageCode);
+    const audio = await synthesizeSpeech(text, voice);
+    response.writeHead(200, {
+      "Content-Type": "audio/mpeg",
+      "Content-Length": audio.length,
+      "Cache-Control": "no-store"
+    });
+    response.end(audio);
+  } catch (error) {
+    sendJson(response, 502, {
+      error: "OCI Text to Speech failed",
+      detail: String(error.message || error)
+    });
+  }
+}
+
+async function handleTranslate(request, response) {
+  try {
+    const body = await readJsonBody(request);
+    const text = cleanTranslationText(body.text);
+    const sourceLanguageCode = selectTranslationLanguageCode(body.sourceLanguageCode || body.source);
+    const targetLanguageCode = selectTranslationLanguageCode(body.targetLanguageCode || body.target);
+    if (!text) {
+      sendJson(response, 400, { error: "text is required" });
+      return;
+    }
+    if (!sourceLanguageCode || !targetLanguageCode) {
+      sendJson(response, 400, { error: "valid sourceLanguageCode and targetLanguageCode are required" });
+      return;
+    }
+    if (sourceLanguageCode === targetLanguageCode) {
+      sendJson(response, 200, {
+        text,
+        sourceLanguageCode,
+        targetLanguageCode
+      });
+      return;
+    }
+
+    const translatedText = await translateText(text, sourceLanguageCode, targetLanguageCode);
+    sendJson(response, 200, {
+      text: translatedText,
+      sourceLanguageCode,
+      targetLanguageCode
+    });
+  } catch (error) {
+    sendJson(response, 502, {
+      error: "OCI translation failed",
+      detail: String(error.message || error)
+    });
+  }
+}
+
 async function handleQuizAnswer(request, response) {
   try {
     const body = await readJsonBody(request);
@@ -141,6 +230,217 @@ async function handleQuizAnswer(request, response) {
       detail: String(error.message || error)
     });
   }
+}
+
+async function synthesizeSpeech(text, voice) {
+  const filePath = path.join(os.tmpdir(), "oracle-adventure-tts-" + process.pid + "-" + Date.now() + "-" + Math.floor(Math.random() * 1000000) + ".mp3");
+  const configuration = {
+    modelFamily: "ORACLE",
+    modelDetails: {
+      modelName: ociTtsModelName,
+      languageCode: voice.languageCode || ociTtsLanguageCode,
+      voiceId: voice.voiceId || ociTtsVoiceId
+    },
+    speechSettings: {
+      textType: "TEXT",
+      outputFormat: "MP3",
+      sampleRateInHz: ociTtsSampleRate
+    }
+  };
+  const args = [
+    "speech",
+    "synthesize-speech",
+    "--text",
+    text,
+    "--file",
+    filePath,
+    "--is-stream-enabled",
+    "false",
+    "--configuration",
+    JSON.stringify(configuration)
+  ];
+
+  if (ociTtsCompartmentId) {
+    args.push("--compartment-id", ociTtsCompartmentId);
+  }
+
+  try {
+    await runOci(args, ociTtsTimeoutMs);
+    return await fs.promises.readFile(filePath);
+  } finally {
+    fs.promises.unlink(filePath).catch(() => {});
+  }
+}
+
+function selectTtsVoice(voiceId, languageCode) {
+  const requested = String(voiceId || "").trim();
+  const requestedLanguage = String(languageCode || ociTtsLanguageCode).trim();
+  const voices = loadTtsVoices();
+  const languageVoices = voices.filter((voice) => {
+    return normalizeLanguageCode(voice.languageCode) === normalizeLanguageCode(requestedLanguage);
+  });
+  const pool = languageVoices.length ? languageVoices : voices.filter((voice) => {
+    return normalizeLanguageCode(voice.languageCode) === normalizeLanguageCode(ociTtsLanguageCode);
+  });
+  const matched = pool.find((voice) => voice.voiceId === requested);
+  if (matched) {
+    return matched;
+  }
+  return pool.find((voice) => voice.defaultVoice) || pool[0] || {
+    voiceId: ociTtsVoiceId,
+    languageCode: ociTtsLanguageCode
+  };
+}
+
+function loadTtsVoiceIds() {
+  if (!ttsVoiceIdCache) {
+    ttsVoiceIdCache = new Set(loadTtsVoices().map((voice) => voice.voiceId));
+  }
+  return ttsVoiceIdCache;
+}
+
+function loadTtsVoices() {
+  const filePath = path.join(root, "tts_voices.json");
+  try {
+    const stat = fs.statSync(filePath);
+    if (ttsVoiceCache && ttsVoiceCacheMtimeMs === stat.mtimeMs) {
+      return ttsVoiceCache;
+    }
+    ttsVoiceCache = parseTtsVoices(fs.readFileSync(filePath, "utf8"));
+    ttsVoiceIdCache = new Set(ttsVoiceCache.map((voice) => voice.voiceId));
+    ttsVoiceCacheMtimeMs = stat.mtimeMs;
+  } catch (error) {
+    ttsVoiceCache = [{
+      voiceId: ociTtsVoiceId,
+      languageCode: ociTtsLanguageCode,
+      defaultVoice: true
+    }];
+    ttsVoiceIdCache = new Set([ociTtsVoiceId]);
+    ttsVoiceCacheMtimeMs = 0;
+  }
+  return ttsVoiceCache;
+}
+
+function parseTtsVoices(text) {
+  try {
+    const payload = JSON.parse(text);
+    const voices = Array.isArray(payload) ? payload : payload.voices;
+    if (!Array.isArray(voices)) {
+      return [{
+        voiceId: ociTtsVoiceId,
+        languageCode: ociTtsLanguageCode,
+        defaultVoice: true
+      }];
+    }
+    const defaultLanguageCode = String(payload.languageCode || payload["language-code"] || ociTtsLanguageCode).trim();
+    const items = voices.map((voice) => {
+      const voiceId = String(voice.voiceId || voice["voice-id"] || "").trim();
+      if (!voiceId) {
+        return null;
+      }
+      return {
+        voiceId,
+        languageCode: String(voice.languageCode || voice["language-code"] || defaultLanguageCode).trim(),
+        defaultVoice: Boolean(voice.defaultVoice || voice["is-default-voice"])
+      };
+    }).filter(Boolean);
+    return items.length ? items : [{
+      voiceId: ociTtsVoiceId,
+      languageCode: ociTtsLanguageCode,
+      defaultVoice: true
+    }];
+  } catch (error) {
+    return [{
+      voiceId: ociTtsVoiceId,
+      languageCode: ociTtsLanguageCode,
+      defaultVoice: true
+    }];
+  }
+}
+
+function normalizeLanguageCode(languageCode) {
+  return String(languageCode || "").trim().toLowerCase();
+}
+
+async function translateText(text, sourceLanguageCode, targetLanguageCode) {
+  const output = await runOci([
+    "ai",
+    "language",
+    "batch-language-translation",
+    "--documents",
+    JSON.stringify([{
+      key: "oracle-adventure",
+      languageCode: sourceLanguageCode,
+      text: text
+    }]),
+    "--target-language-code",
+    targetLanguageCode
+  ].concat(ociLanguageCompartmentId ? ["--compartment-id", ociLanguageCompartmentId] : []), ociLanguageTimeoutMs);
+  const payload = JSON.parse(output || "{}");
+  const documents = payload.data && Array.isArray(payload.data.documents) ? payload.data.documents : [];
+  const errors = payload.data && Array.isArray(payload.data.errors) ? payload.data.errors : [];
+  const translated = documents[0] && (documents[0]["translated-text"] || documents[0].translatedText);
+  if (!translated) {
+    throw new Error(errors.length ? JSON.stringify(errors) : "OCI translation returned no text");
+  }
+  return String(translated).trim();
+}
+
+function selectTranslationLanguageCode(languageCode) {
+  const requested = String(languageCode || "").trim();
+  if (!requested) {
+    return "";
+  }
+  return loadTranslationLanguageCodes().has(requested) ? requested : "";
+}
+
+function loadTranslationLanguageCodes() {
+  const filePath = path.join(root, "translation_languages.json");
+  try {
+    const stat = fs.statSync(filePath);
+    if (translationLanguageCache && translationLanguageCacheMtimeMs === stat.mtimeMs) {
+      return translationLanguageCache;
+    }
+    translationLanguageCache = parseTranslationLanguageCodes(fs.readFileSync(filePath, "utf8"));
+    translationLanguageCacheMtimeMs = stat.mtimeMs;
+  } catch (error) {
+    translationLanguageCache = new Set(["en"]);
+    translationLanguageCacheMtimeMs = 0;
+  }
+  return translationLanguageCache;
+}
+
+function parseTranslationLanguageCodes(text) {
+  try {
+    const payload = JSON.parse(text);
+    const languages = Array.isArray(payload) ? payload : payload.languages;
+    if (!Array.isArray(languages)) {
+      return new Set(["en"]);
+    }
+    const codes = languages.map((language) => {
+      return String(language.code || language.languageCode || language["language-code"] || "").trim();
+    }).filter(Boolean);
+    return new Set(codes.length ? codes : ["en"]);
+  } catch (error) {
+    return new Set(["en"]);
+  }
+}
+
+function cleanTtsText(text) {
+  return String(text || "")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1 link")
+    .replace(/https?:\/\/[^\s)]+/g, "link")
+    .replace(/[<>]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 1800);
+}
+
+function cleanTranslationText(text) {
+  return String(text || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 4500);
 }
 
 function loadQuizQuestions() {
@@ -369,11 +669,11 @@ async function callAgent(endpointId, userMessage, sessionId, details) {
   };
 }
 
-function runOci(args) {
+function runOci(args, timeoutMs) {
   const fullArgs = withOciGlobals(args);
   return new Promise((resolve, reject) => {
     execFile(ociCliPath, fullArgs, {
-      timeout: ociChatTimeoutMs,
+      timeout: timeoutMs || ociChatTimeoutMs,
       windowsHide: true,
       env: Object.assign({}, process.env, {
         OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING: "True"
