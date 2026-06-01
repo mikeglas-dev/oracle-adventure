@@ -87,6 +87,8 @@
   const WINNER_REDIRECT_DELAY_MS = 6000;
   const LOSER_HELP_URL = "https://orasenatdoracledigital05.objectstorage.us-ashburn-1.oci.customer-oci.com/p/rkrab0IwKFCUUUDkA_gL9beKcB6wvljCmDHaIA5TJNGzM6J1nq29k8mCQ1s2_iqL/n/orasenatdoracledigital05/b/bucket-winner/o/oracle-adventure-loser/loser-help.html";
   const LOSER_REDIRECT_DELAY_MS = 6000;
+  const FAST_FORWARD_OFFER_CHANCE = 0.28;
+  const FAST_FORWARD_MAX_ATTEMPTS = 4;
 
   const STOPWORDS = new Set([
     "about", "above", "after", "again", "against", "also", "because", "been", "before", "being", "between",
@@ -143,6 +145,12 @@
     winnerText: "",
     lostText: "",
     c3eSource: "",
+    fastForwardQuizUnavailable: false,
+    fastForwardWrongCount: 0,
+    fastForwardAttempted: new Set(),
+    fastForwardCurrent: null,
+    fastForwardPreviousMode: "question",
+    fastForwardOfferCooldown: 0,
     npcNames: [],
     zorkLocations: [],
     npcs: [],
@@ -214,7 +222,6 @@
       if (state.zorkLocations.length < NPC_COUNT) {
         missing.push("zork_locations.md needs at least " + NPC_COUNT + " locations");
       }
-
       if (missing.length) {
         showBootError(missing);
         return;
@@ -326,6 +333,12 @@
     state.conversationMode = "question";
     state.agentUnavailable = false;
     state.agentSessionIds = {};
+    state.fastForwardQuizUnavailable = false;
+    state.fastForwardWrongCount = 0;
+    state.fastForwardAttempted = new Set();
+    state.fastForwardCurrent = null;
+    state.fastForwardPreviousMode = "question";
+    state.fastForwardOfferCooldown = 0;
     state.moveQueue = [];
     state.won = false;
     state.lost = false;
@@ -540,7 +553,11 @@
       return;
     }
     if (npc.phaseIndex === state.currentPhaseIndex) {
-      const text = npc.label + " watches from " + npc.location + ". Ask of " + npc.phase.name + ".";
+      const text = maybeAppendFastForwardOffer(
+        npc,
+        npc.label + " watches from " + npc.location + ". Ask of " + npc.phase.name + ".",
+        "question"
+      );
       addLog(npc.keeper, text);
       showNpcBubble(text, npc.x, npc.y);
     } else if (npc.phaseIndex < state.currentPhaseIndex) {
@@ -619,6 +636,11 @@
       return;
     }
 
+    if (isGotoQuizCommand(text)) {
+      await enterGotoQuizFlow();
+      return;
+    }
+
     if (/^help\b/i.test(text) || text.trim() === "?") {
       respondWithHelp();
       return;
@@ -629,6 +651,11 @@
       showNpcBubble(response, state.player.x, state.player.y - 18);
       addLog("System", response);
       playTone("deny");
+      return;
+    }
+
+    if (state.conversationMode === "fastForwardAnswer") {
+      await handleFastForwardAnswer(state.activeNpc || currentTarget(), text);
       return;
     }
 
@@ -655,6 +682,11 @@
       return;
     }
 
+    if (state.conversationMode === "fastForwardOffer") {
+      await handleFastForwardOffer(npc, text);
+      return;
+    }
+
     if (state.conversationMode === "test") {
       if (wantsMoreInfo(text)) {
         await provideMoreInfo(npc, text);
@@ -672,8 +704,7 @@
     setNpcBusy(true);
     showNpcBubble(npc.keeper + " consults the OCI Generative AI Agent...", npc.x, npc.y);
     const answer = await answerQuestion(npc, text);
-    const response = answer + readinessPrompt();
-    state.conversationMode = "ready";
+    const response = maybeAppendFastForwardOffer(npc, answer + readinessPrompt(), "ready");
     showNpcBubble(response, npc.x, npc.y);
     addLog(npc.keeper, response);
     playTone("speak");
@@ -703,8 +734,7 @@
     setNpcBusy(true);
     showNpcBubble(npc.keeper + " consults the OCI Generative AI Agent...", npc.x, npc.y);
     const answer = await answerQuestion(npc, text);
-    const response = answer + readinessPrompt();
-    state.conversationMode = "ready";
+    const response = maybeAppendFastForwardOffer(npc, answer + readinessPrompt(), "ready");
     showNpcBubble(response, npc.x, npc.y);
     addLog(npc.keeper, response);
     playTone("speak");
@@ -715,12 +745,171 @@
     setNpcBusy(true);
     showNpcBubble(npc.keeper + " consults the OCI Generative AI Agent...", npc.x, npc.y);
     const answer = await answerQuestion(npc, moreInfoQuery(npc, text));
-    const response = answer + readinessPrompt();
-    state.conversationMode = "ready";
+    const response = maybeAppendFastForwardOffer(npc, answer + readinessPrompt(), "ready");
     showNpcBubble(response, npc.x, npc.y);
     addLog(npc.keeper, response);
     playTone("speak");
     setNpcBusy(false);
+  }
+
+  function maybeAppendFastForwardOffer(npc, response, fallbackMode) {
+    state.conversationMode = fallbackMode;
+    if (!shouldOfferFastForward(npc, fallbackMode)) {
+      return response;
+    }
+    state.fastForwardPreviousMode = fallbackMode;
+    state.conversationMode = "fastForwardOffer";
+    return response + "\n\nWould you like to fast forward to the end of the game by answering a random question?";
+  }
+
+  function shouldOfferFastForward(npc, fallbackMode) {
+    if (!npc || npc.isTrap || state.won || state.lost || fallbackMode === "test") {
+      return false;
+    }
+    if (state.fastForwardQuizUnavailable || state.fastForwardCurrent) {
+      return false;
+    }
+    if (state.fastForwardAttempted.size >= FAST_FORWARD_MAX_ATTEMPTS) {
+      return false;
+    }
+    if (state.fastForwardOfferCooldown > 0) {
+      state.fastForwardOfferCooldown -= 1;
+      return false;
+    }
+    return Math.random() < FAST_FORWARD_OFFER_CHANCE;
+  }
+
+  async function handleFastForwardOffer(npc, text) {
+    if (isFastForwardYes(text)) {
+      await askFastForwardQuestion(npc);
+      return;
+    }
+    state.conversationMode = state.fastForwardPreviousMode || "question";
+    state.fastForwardOfferCooldown = 2;
+    const response = "Very well. Ask away.";
+    showNpcBubble(response, npc.x, npc.y);
+    addLog(npc.keeper, response);
+    playTone("speak");
+  }
+
+  async function askFastForwardQuestion(npc) {
+    try {
+      setNpcBusy(true);
+      showNpcBubble(npc.keeper + " opens the riddle gate...", npc.x, npc.y);
+      const item = await requestFastForwardQuestion();
+      state.fastForwardCurrent = item;
+      state.conversationMode = "fastForwardAnswer";
+      const response = "Ridle me this: " + item.question;
+      showNpcBubble(response, npc.x, npc.y);
+      addLog(npc.keeper, response);
+      playTone("speak");
+    } catch (error) {
+      state.fastForwardQuizUnavailable = true;
+      state.fastForwardCurrent = null;
+      state.conversationMode = state.fastForwardPreviousMode || "question";
+      const response = "The riddle gate is sealed for now. Continue on the wheel path.";
+      showNpcBubble(response, npc.x, npc.y);
+      addLog(npc.keeper, response);
+      playTone("deny");
+    } finally {
+      setNpcBusy(false);
+    }
+  }
+
+  async function handleFastForwardAnswer(npc, text) {
+    if (!npc) {
+      const response = "No keeper is ready to hold the riddle gate.";
+      state.conversationMode = state.fastForwardPreviousMode || "question";
+      showNpcBubble(response, map.center.x, map.center.y - 18);
+      addLog("System", response);
+      playTone("deny");
+      return;
+    }
+
+    const current = state.fastForwardCurrent;
+    if (!current) {
+      state.conversationMode = state.fastForwardPreviousMode || "question";
+      return;
+    }
+
+    let correct = false;
+    try {
+      setNpcBusy(true);
+      correct = await submitFastForwardAnswer(current, text);
+    } catch (error) {
+      state.fastForwardQuizUnavailable = true;
+      state.fastForwardCurrent = null;
+      state.conversationMode = state.fastForwardPreviousMode || "question";
+      const response = "The riddle gate refuses the answer for now. Continue on the wheel path.";
+      showNpcBubble(response, npc.x, npc.y);
+      addLog(npc.keeper, response);
+      playTone("deny");
+      return;
+    } finally {
+      setNpcBusy(false);
+    }
+
+    if (correct) {
+      state.fastForwardCurrent = null;
+      addLog(npc.keeper, "Correct. The wheel folds time around you.");
+      enterGotoWinFlow();
+      return;
+    }
+
+    state.fastForwardAttempted.add(current.index);
+    state.fastForwardWrongCount += 1;
+    state.fastForwardCurrent = null;
+    state.fastForwardOfferCooldown = 2;
+
+    if (state.fastForwardWrongCount >= FAST_FORWARD_MAX_ATTEMPTS) {
+      const body = state.lostText || "You chose poorly.";
+      loseGame(npc, npc.keeper + " closes the riddle gate. " + body);
+      return;
+    }
+
+    state.conversationMode = state.fastForwardPreviousMode || "question";
+    const response = "Not quite. I will ask another question later.";
+    showNpcBubble(response, npc.x, npc.y);
+    addLog(npc.keeper, response);
+    playTone("deny");
+  }
+
+  async function requestFastForwardQuestion() {
+    const response = await fetch("/api/quiz-question", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        attempted: Array.from(state.fastForwardAttempted)
+      })
+    });
+    if (!response.ok) {
+      throw new Error("quiz question endpoint returned " + response.status);
+    }
+    const payload = await response.json();
+    return {
+      index: Number(payload.index),
+      question: String(payload.question || "")
+    };
+  }
+
+  async function submitFastForwardAnswer(question, answer) {
+    const response = await fetch("/api/quiz-answer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        index: question.index,
+        answer: answer
+      })
+    });
+    if (!response.ok) {
+      throw new Error("quiz answer endpoint returned " + response.status);
+    }
+    const payload = await response.json();
+    return Boolean(payload.correct);
+  }
+
+  function isFastForwardYes(text) {
+    return /^(y|yes|yeah|yep|sure|ok|okay|fast forward)\b/i.test(text.trim());
   }
 
   function setNpcBusy(isBusy) {
@@ -767,6 +956,10 @@
 
   function isGogoLostCommand(text) {
     return /^goto:\s*lost$/i.test(text.trim());
+  }
+
+  function isGotoQuizCommand(text) {
+    return /^goto:\s*quiz$/i.test(text.trim());
   }
 
   function looksLikePhaseAnswer(npc, text) {
@@ -1190,6 +1383,39 @@
     loseGame(npc);
   }
 
+  async function enterGotoQuizFlow() {
+    clearEndRedirects();
+    state.won = false;
+    state.lost = false;
+    winnerModal.classList.add("hidden");
+    lostModal.classList.add("hidden");
+
+    const npc = quizKeeper();
+    if (!npc) {
+      const response = "No keeper is ready to hold the riddle gate.";
+      showNpcBubble(response, map.center.x, map.center.y - 18);
+      addLog("System", response);
+      playTone("deny");
+      return;
+    }
+
+    state.activeNpc = npc;
+    state.fastForwardCurrent = null;
+    state.fastForwardPreviousMode = "question";
+    state.fastForwardOfferCooldown = 0;
+    addLog("System", "The riddle gate opens.");
+    await askFastForwardQuestion(npc);
+  }
+
+  function quizKeeper() {
+    if (state.activeNpc && !state.activeNpc.isTrap && state.activeNpc.phaseIndex === state.currentPhaseIndex) {
+      return state.activeNpc;
+    }
+    return currentTarget() || state.npcs.find(function (npc) {
+      return !npc.isTrap;
+    });
+  }
+
   function clearEndRedirects() {
     clearWinnerRedirect();
     clearLoserRedirect();
@@ -1209,7 +1435,7 @@
     }
   }
 
-  function loseGame(npc) {
+  function loseGame(npc, customResponse) {
     clearEndRedirects();
     state.won = false;
     state.lost = true;
@@ -1218,7 +1444,7 @@
     state.conversationMode = "question";
     winnerModal.classList.add("hidden");
     const body = state.lostText || "You chose poorly.";
-    const response = npc.label + " is outside the C3E path. " + body;
+    const response = customResponse || npc.label + " is outside the C3E path. " + body;
     lostText.textContent = body;
     lostModal.classList.remove("hidden");
     showNpcBubble(response, npc.x, npc.y);

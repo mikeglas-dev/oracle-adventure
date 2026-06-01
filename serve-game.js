@@ -16,6 +16,12 @@ const ociAuth = process.env.OCI_CLI_AUTH || "";
 const ociCompartmentId = process.env.OCI_COMPARTMENT_ID || "";
 const ociChatTimeoutMs = Number(process.env.OCI_GENAI_AGENT_TIMEOUT_MS || 45000);
 let resolvedAgentEndpointId = "";
+let quizCache = null;
+let quizCacheMtimeMs = 0;
+
+const privateFiles = new Set([
+  "questions.txt"
+]);
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -33,14 +39,28 @@ const server = http.createServer((request, response) => {
       handleNpcChat(request, response);
       return;
     }
+    if (request.method === "POST" && url.pathname === "/api/quiz-question") {
+      handleQuizQuestion(request, response);
+      return;
+    }
+    if (request.method === "POST" && url.pathname === "/api/quiz-answer") {
+      handleQuizAnswer(request, response);
+      return;
+    }
 
     const pathname = decodeURIComponent(url.pathname);
     const requested = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
     const filePath = path.resolve(root, requested);
 
-    if (!filePath.startsWith(root)) {
+    if (!isInsideRoot(filePath)) {
       response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
       response.end("forbidden");
+      return;
+    }
+
+    if (isPrivateFilePath(filePath)) {
+      response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("not found");
       return;
     }
 
@@ -62,6 +82,130 @@ const server = http.createServer((request, response) => {
     response.end("server error");
   }
 });
+
+function isInsideRoot(filePath) {
+  return filePath === root || filePath.startsWith(root + path.sep);
+}
+
+function isPrivateFilePath(filePath) {
+  return Array.from(privateFiles).some((fileName) => {
+    return filePath === path.resolve(root, fileName);
+  });
+}
+
+async function handleQuizQuestion(request, response) {
+  try {
+    const body = await readJsonBody(request);
+    const attempted = new Set(Array.isArray(body.attempted) ? body.attempted.map(Number) : []);
+    const questions = loadQuizQuestions();
+    const remaining = questions
+      .map((question, index) => Object.assign({ index }, question))
+      .filter((question) => !attempted.has(question.index));
+
+    if (!remaining.length) {
+      sendJson(response, 404, { error: "No quiz questions remain" });
+      return;
+    }
+
+    const item = remaining[Math.floor(Math.random() * remaining.length)];
+    sendJson(response, 200, {
+      index: item.index,
+      question: item.question
+    });
+  } catch (error) {
+    sendJson(response, 500, {
+      error: "Quiz question failed",
+      detail: String(error.message || error)
+    });
+  }
+}
+
+async function handleQuizAnswer(request, response) {
+  try {
+    const body = await readJsonBody(request);
+    const index = Number(body.index);
+    const answer = String(body.answer || "");
+    const questions = loadQuizQuestions();
+    const item = Number.isInteger(index) ? questions[index] : null;
+    if (!item) {
+      sendJson(response, 400, { error: "Unknown quiz question" });
+      return;
+    }
+
+    sendJson(response, 200, {
+      correct: isCorrectQuizAnswer(answer, item.answers)
+    });
+  } catch (error) {
+    sendJson(response, 500, {
+      error: "Quiz answer failed",
+      detail: String(error.message || error)
+    });
+  }
+}
+
+function loadQuizQuestions() {
+  const filePath = path.join(root, "questions.txt");
+  const stat = fs.statSync(filePath);
+  if (quizCache && quizCacheMtimeMs === stat.mtimeMs) {
+    return quizCache;
+  }
+
+  quizCache = parseQuizQuestions(fs.readFileSync(filePath, "utf8"));
+  quizCacheMtimeMs = stat.mtimeMs;
+  return quizCache;
+}
+
+function parseQuizQuestions(text) {
+  return String(text || "")
+    .split(/\r?\n\s*\r?\n/)
+    .map((block) => {
+      const questionMatch = block.match(/Question:\s*([^\r\n]+)/i);
+      const answerMatch = block.match(/Answer:\s*([^\r\n]+)/i);
+      if (!questionMatch || !answerMatch) {
+        return null;
+      }
+      const answers = parseAnswerOptions(answerMatch[1]);
+      if (!answers.length) {
+        return null;
+      }
+      return {
+        question: questionMatch[1].trim(),
+        answers
+      };
+    })
+    .filter(Boolean);
+}
+
+function parseAnswerOptions(answerText) {
+  return String(answerText || "")
+    .split(/\s+or\s+/i)
+    .map((answer) => answer.trim())
+    .filter(Boolean);
+}
+
+function isCorrectQuizAnswer(answer, answers) {
+  const normalized = normalizeQuizAnswer(answer);
+  if (!normalized) {
+    return false;
+  }
+  return answers.some((option) => answerOptionMatches(normalized, option));
+}
+
+function answerOptionMatches(normalizedAnswer, answerOption) {
+  const expected = normalizeQuizAnswer(answerOption);
+  return normalizedAnswer === expected ||
+    normalizedAnswer.indexOf(expected) >= 0 ||
+    (expected.indexOf(normalizedAnswer) >= 0 && normalizedAnswer.length >= 2);
+}
+
+function normalizeQuizAnswer(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
 
 async function handleNpcChat(request, response) {
   try {
