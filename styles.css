@@ -292,6 +292,7 @@ h1 {
 }
 
 .speech {
+  display: none !important;
   position: absolute;
   z-index: 5;
   max-width: min(360px, 44vw);

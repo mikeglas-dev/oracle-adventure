@@ -1,14 +1,27 @@
 "use strict";
 
 const http = require("http");
+const https = require("https");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { execFile } = require("child_process");
 
 const root = __dirname;
+const defaultHttpsKeyPath = path.join(root, "certs", "localhost-key.pem");
+const defaultHttpsCertPath = path.join(root, "certs", "localhost-cert.pem");
+const httpsKeyPath = resolveFromRoot(process.env.SSL_KEY_PATH || process.env.HTTPS_KEY_PATH || defaultHttpsKeyPath);
+const httpsCertPath = resolveFromRoot(process.env.SSL_CERT_PATH || process.env.HTTPS_CERT_PATH || defaultHttpsCertPath);
+const httpsCaPath = process.env.SSL_CA_PATH || process.env.HTTPS_CA_PATH
+  ? resolveFromRoot(process.env.SSL_CA_PATH || process.env.HTTPS_CA_PATH)
+  : "";
+const httpsRequested = envFlag("HTTPS") || envFlag("USE_HTTPS") ||
+  Boolean(process.env.SSL_KEY_PATH || process.env.HTTPS_KEY_PATH || process.env.SSL_CERT_PATH || process.env.HTTPS_CERT_PATH);
+const httpsEnabled = httpsRequested || (fs.existsSync(defaultHttpsKeyPath) && fs.existsSync(defaultHttpsCertPath));
+const protocol = httpsEnabled ? "https" : "http";
 const port = Number(process.env.PORT || 8765);
 const host = process.env.HOST || "127.0.0.1";
+const httpRedirectPort = Number(process.env.HTTP_REDIRECT_PORT || 0);
 const configuredAgentEndpoint = process.env.OCI_GENAI_AGENT_ENDPOINT_ID || "ocid1.genaiagentendpoint.oc1.iad.amaaaaaaxzcdd4qasgtpcme244hx22er3rqfywvv3tdylhu5zbzkheq7dcvq";
 const ociCliPath = process.env.OCI_CLI_PATH || "oci";
 const ociProfile = process.env.OCI_CLI_PROFILE || process.env.OCI_PROFILE || "";
@@ -51,9 +64,9 @@ const types = {
   ".mp3": "audio/mpeg"
 };
 
-const server = http.createServer((request, response) => {
+const server = createGameServer((request, response) => {
   try {
-    const url = new URL(request.url, `http://${host}:${port}`);
+    const url = new URL(request.url, `${protocol}://${host}:${port}`);
     if (request.method === "POST" && url.pathname === "/api/npc-chat") {
       handleNpcChat(request, response);
       return;
@@ -109,6 +122,55 @@ const server = http.createServer((request, response) => {
     response.end("server error");
   }
 });
+
+function envFlag(name) {
+  return /^(1|true|yes|on)$/i.test(String(process.env[name] || "").trim());
+}
+
+function resolveFromRoot(filePath) {
+  return path.isAbsolute(filePath) ? filePath : path.resolve(root, filePath);
+}
+
+function createGameServer(listener) {
+  if (!httpsEnabled) {
+    return http.createServer(listener);
+  }
+
+  return https.createServer(loadHttpsCredentials(), listener);
+}
+
+function loadHttpsCredentials() {
+  const credentials = {
+    key: fs.readFileSync(httpsKeyPath),
+    cert: fs.readFileSync(httpsCertPath)
+  };
+
+  if (httpsCaPath) {
+    credentials.ca = fs.readFileSync(httpsCaPath);
+  }
+
+  return credentials;
+}
+
+function startHttpRedirectServer() {
+  const redirectServer = http.createServer((request, response) => {
+    response.writeHead(308, {
+      Location: "https://" + redirectTargetHost(request.headers.host) + request.url,
+      "Cache-Control": "no-store"
+    });
+    response.end("redirecting to https");
+  });
+
+  redirectServer.listen(httpRedirectPort, host, () => {
+    console.log(`Oracle Adventure redirecting http://${host}:${httpRedirectPort}/ to https://${host}:${port}/`);
+  });
+}
+
+function redirectTargetHost(requestHost) {
+  const headerHost = String(requestHost || `${host}:${httpRedirectPort}`).trim();
+  const hostName = headerHost.replace(/:\d+$/, "");
+  return port === 443 ? hostName : hostName + ":" + port;
+}
 
 function isInsideRoot(filePath) {
   return filePath === root || filePath.startsWith(root + path.sep);
@@ -374,7 +436,9 @@ async function translateText(text, sourceLanguageCode, targetLanguageCode) {
       text: text
     }]),
     "--target-language-code",
-    targetLanguageCode
+    targetLanguageCode,
+    "--output",
+    "json"
   ].concat(ociLanguageCompartmentId ? ["--compartment-id", ociLanguageCompartmentId] : []), ociLanguageTimeoutMs);
   const payload = JSON.parse(output || "{}");
   const documents = payload.data && Array.isArray(payload.data.documents) ? payload.data.documents : [];
@@ -676,7 +740,9 @@ function runOci(args, timeoutMs) {
       timeout: timeoutMs || ociChatTimeoutMs,
       windowsHide: true,
       env: Object.assign({}, process.env, {
-        OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING: "True"
+        OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING: "True",
+        PYTHONIOENCODING: "utf-8",
+        PYTHONUTF8: "1"
       }),
       maxBuffer: 1024 * 1024
     }, (error, stdout, stderr) => {
@@ -736,5 +802,12 @@ function sendJson(response, status, payload) {
 }
 
 server.listen(port, host, () => {
-  console.log(`Oracle Adventure running at http://${host}:${port}/`);
+  console.log(`Oracle Adventure running at ${protocol}://${host}:${port}/`);
+  if (httpsEnabled) {
+    console.log(`HTTPS certificate: ${httpsCertPath}`);
+  }
 });
+
+if (httpsEnabled && httpRedirectPort) {
+  startHttpRedirectServer();
+}

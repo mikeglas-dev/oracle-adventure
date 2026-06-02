@@ -76,29 +76,6 @@
   const NPC_COUNT = PHASES.length + TRAP_PHASES.length;
   const ENGLISH_LANGUAGE_CODE = "en";
   const DEFAULT_TTS_LANGUAGE_CODE = "en-US";
-  const TTS_LANGUAGE_BY_TRANSLATION_LANGUAGE = {
-    "en": "en-US",
-    "en-us": "en-US",
-    "en-gb": "en-GB",
-    "es": "es-ES",
-    "es-es": "es-ES",
-    "pt-br": "pt-BR",
-    pt: "pt-BR",
-    "fr": "fr-FR",
-    "fr-fr": "fr-FR",
-    "fr-ca": "fr-FR",
-    "it": "it-IT",
-    "it-it": "it-IT",
-    "ja": "ja-JP",
-    "ja-jp": "ja-JP",
-    "zh": "cmn-CN",
-    "zh-cn": "cmn-CN",
-    "zh-tw": "cmn-CN",
-    "cmn": "cmn-CN",
-    "cmn-cn": "cmn-CN",
-    "hi": "hi-IN",
-    "hi-in": "hi-IN"
-  };
 
   const REQUIRED_FILES = [
     "help.txt",
@@ -185,6 +162,7 @@
     zorkLocations: [],
     ttsVoices: [],
     ttsLanguageCodes: new Set([ENGLISH_LANGUAGE_CODE]),
+    ttsLanguageMap: {},
     translationLanguages: [],
     npcs: [],
     completed: new Set(),
@@ -260,6 +238,7 @@
       state.c3eSource = values[4] ? values[4].trim() : "";
       state.ttsVoices = values[5] ? parseTtsVoices(values[5]) : [];
       state.ttsLanguageCodes = values[5] ? parseTtsLanguageCodes(values[5]) : new Set([ENGLISH_LANGUAGE_CODE]);
+      state.ttsLanguageMap = values[5] ? parseTtsLanguageMap(values[5]) : {};
       state.translationLanguages = values[6] ? parseTranslationLanguages(values[6]) : [];
       state.lostText = values[7] ? values[7].trim() : "";
 
@@ -426,6 +405,23 @@
       return codes;
     } catch (error) {
       return new Set([ENGLISH_LANGUAGE_CODE]);
+    }
+  }
+
+  function parseTtsLanguageMap(text) {
+    try {
+      const payload = JSON.parse(text);
+      const rawMap = payload.translationLanguageToSpeechLanguage || {};
+      return Object.keys(rawMap).reduce(function (map, key) {
+        const normalizedKey = normalizeLanguageCode(key);
+        const speechCode = String(rawMap[key] || "").trim();
+        if (normalizedKey && speechCode) {
+          map[normalizedKey] = speechCode;
+        }
+        return map;
+      }, {});
+    } catch (error) {
+      return {};
     }
   }
 
@@ -1853,8 +1849,8 @@
 
   function ttsLanguageCodeForTranslation(languageCode) {
     const normalized = normalizeLanguageCode(languageCode);
-    if (TTS_LANGUAGE_BY_TRANSLATION_LANGUAGE[normalized]) {
-      return TTS_LANGUAGE_BY_TRANSLATION_LANGUAGE[normalized];
+    if (state.ttsLanguageMap[normalized]) {
+      return state.ttsLanguageMap[normalized];
     }
 
     const exactVoice = state.ttsVoices.find(function (voice) {
@@ -2233,17 +2229,17 @@
 
   function drawLocations() {
     state.npcs.forEach(function (npc) {
-      const width = Math.min(166, Math.max(128, npc.location.length * 7 + 24, npc.phase.name.length * 8 + 24));
-      const height = 38;
-      const label = npcLabelPosition(npc, width, height, 118);
+      const width = Math.min(210, Math.max(146, npc.location.length * 8.5 + 30, npc.phase.name.length * 8 + 28));
+      const height = 46;
+      const label = npcLabelPosition(npc, width, height, 124);
       ctx.fillStyle = "#11110c";
       ctx.fillRect(label.x - width / 2 + 4, label.y - height / 2 + 4, width, height);
       ctx.fillStyle = "#eadb91";
       ctx.fillRect(label.x - width / 2, label.y - height / 2, width, height);
       ctx.fillStyle = "#3a2b17";
       ctx.fillRect(label.x - width / 2 + 4, label.y - height / 2 + 4, width - 8, height - 8);
-      drawText(fitLabel(npc.location, Math.floor((width - 20) / 7)), label.x, label.y - 4, "#fff3bc", 10, "center");
-      drawText(npc.phase.name, label.x, label.y + 10, npc.phase.color, 10, "center");
+      drawText(fitLabel(npc.location, Math.floor((width - 24) / 8.5)), label.x, label.y - 7, "#fff3bc", 14, "center");
+      drawText(npc.phase.name, label.x, label.y + 12, npc.phase.color, 11, "center");
     });
   }
 

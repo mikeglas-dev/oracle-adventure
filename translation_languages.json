@@ -1,6 +1,6 @@
 {
-  "source": "OCI Language batch-language-translation target-language-code options",
-  "generatedAt": "2026-06-01",
+  "source": "OCI Language batch-language-translation live probe",
+  "generatedAt": "2026-06-01T20:26:40Z",
   "languages": [
     {
       "code": "ar",
