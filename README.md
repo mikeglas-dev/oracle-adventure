@@ -5,7 +5,7 @@ Future enhancements include text to speech for NPC characters, and linking to C3
 The NPC dialogue calls an OCI Generative AI Agent through the local Node server. By default it uses endpoint `ocid1.genaiagentendpoint.oc1.iad.amaaaaaaxzcdd4qasgtpcme244hx22er3rqfywvv3tdylhu5zbzkheq7dcvq`; set `OCI_GENAI_AGENT_ENDPOINT_ID` to override it. The server creates and reuses OCI Agent sessions for NPC conversations. Optional OCI CLI settings include `OCI_PROFILE`, `OCI_REGION`, and `OCI_CLI_AUTH`.
 The winner page is uploaded to Object Storage bucket `bucket-winner` under `oracle-adventure-winner/`. The game redirects to its pre-authenticated request after the player wins.
 The loser page is uploaded to Object Storage bucket `bucket-winner` under `oracle-adventure-loser/`. The game redirects to its pre-authenticated request after the player loses.
-OCI VM deployment: `https://129.213.81.129:8765/`
+OCI VM deployment: `https://oracle-adventure.duckdns.org/`
 
 HTTPS:
 
@@ -35,7 +35,7 @@ Set `HTTP_REDIRECT_PORT=80` if you also want the server process to redirect plai
 
 Current OCI VM HTTPS:
 
-The VM runs `oracle-adventure.service` from `/opt/oracle-adventure` with `HTTPS=true` and a Let's Encrypt short-lived IP certificate for `129.213.81.129`. Renewal is configured in root cron using `acme.sh`; the helper script is in `tools/configure-vm-acme-renewal.sh`.
+The VM runs `oracle-adventure.service` from `/opt/oracle-adventure` with `HTTPS=true` and a Let's Encrypt certificate for `oracle-adventure.duckdns.org`. Public port `443` forwards to the game service on `8765`, so the clean URL works without a port. Renewal is configured in root cron using `acme.sh`; the helper script is in `tools/configure-vm-acme-renewal.sh`.
 
 c3e activities were retrieved from alchemy using codex and the sqlcl mcp server
 c3e details were retrieved from Sharepoint using the codex Sharepoint plug-in. Condensed into a markup file
